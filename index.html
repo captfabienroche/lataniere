@@ -3,181 +3,219 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Tanière</title>
+
+<title>La Tanière - Gestion des membres</title>
+
 <link rel="manifest" href="/la-taniere/manifest.json">
 <link rel="icon" href="/la-taniere/logo.png">
-<meta name="theme-color" content="#ff7a00">
+<meta name="theme-color" content="#e07b00">
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#0f172a;color:#fff}
-nav{display:flex;align-items:center;padding:12px 20px;background:#020617;border-bottom:2px solid #f97316}
-nav h1{color:#f97316;font-size:18px;margin:0;flex:1}
-.nav-btn{background:none;border:none;color:#94a3b8;margin:0 6px;cursor:pointer}
-.nav-btn.active{color:#f97316}
-.page{display:none;padding:20px;max-width:900px;margin:auto}
-.page.active{display:block}
-button{padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;cursor:pointer}
-input{padding:10px;border-radius:8px;border:none;background:#1e293b;color:#fff;width:100%;margin:5px 0}
-.card{background:#1e293b;padding:12px;border-radius:10px;margin:10px 0;display:flex;justify-content:space-between;align-items:center}
-.badge{padding:4px 10px;border-radius:20px}
-.green{background:#16a34a}
-.red{background:#dc2626}
-.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center}
-.modal{background:#020617;padding:20px;border-radius:12px;width:90%;max-width:400px}
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.member-card{border-radius:16px;padding:20px;color:#fff}
-.card-green{background:linear-gradient(135deg,#16a34a,#22c55e)}
-.card-blue{background:linear-gradient(135deg,#2563eb,#3b82f6)}
-.card-orange{background:linear-gradient(135deg,#ea580c,#fb923c)}
-.card-expired{background:#374151}
-.scan-box{margin-top:20px;padding:20px;border-radius:12px;text-align:center;font-size:22px}
-.scan-ok{background:#16a34a}
-.scan-bad{background:#dc2626}
+/* === TON DESIGN ORIGINAL CONSERVÉ === */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial;background:#1a1a1a;color:#333;}
+
+nav{background:#1a1a1a;padding:0 24px;display:flex;align-items:center;border-bottom:3px solid #e07b00;}
+nav img{width:50px;padding:8px 0;}
+nav h1{color:#e07b00;font-size:18px;flex:1;margin-left:12px;}
+
+.nav-btn{padding:10px 18px;background:none;border:none;color:#ccc;cursor:pointer;border-bottom:3px solid transparent;}
+.nav-btn.active{color:#e07b00;border-bottom-color:#e07b00;}
+
+.page{display:none;padding:24px;max-width:1200px;margin:auto;}
+.page.active{display:block;}
+
+.table-wrap{background:#fff;border-radius:10px;overflow:hidden;}
+.table-header{padding:16px;display:flex;gap:12px;align-items:center;}
+.search-box{padding:8px;border:2px solid #ddd;border-radius:6px;}
+
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #eee;}
+
+.badge{padding:4px 10px;border-radius:20px;font-size:12px;}
+.badge-green{background:#d4edda;color:#155724;}
+.badge-red{background:#f8d7da;color:#721c24;}
+
+.btn{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;}
+.btn-primary{background:#e07b00;color:#fff;}
+.btn-success{background:#28a745;color:#fff;}
+.btn-danger{background:#dc3545;color:#fff;}
+.btn-secondary{background:#6c757d;color:#fff;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;padding:20px;border-radius:10px;width:90%;max-width:400px;}
+
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+.member-card{border-radius:14px;padding:20px;color:#fff;position:relative;}
+.card-green{background:linear-gradient(135deg,#1a7a3c,#2ecc71);}
+.card-blue{background:linear-gradient(135deg,#1a3a7a,#3498db);}
+.card-purple{background:linear-gradient(135deg,#5a1a7a,#9b59b6);}
+.card-expired{background:#555;}
+
+.card-qr{background:#fff;padding:4px;border-radius:6px;}
+
+.scan-result{padding:20px;border-radius:10px;margin-top:16px;text-align:center;font-weight:bold;}
+.scan-ok{background:#d4edda;}
+.scan-unknown{background:#f8d7da;}
 </style>
 </head>
+
 <body>
+
 <nav>
-<h1>🦊 La Tanière</h1>
-<button class="nav-btn active" onclick="show('members',this)">Membres</button>
-<button class="nav-btn" onclick="show('cards',this)">Cartes</button>
-<button class="nav-btn" onclick="show('scan',this)">Scanner</button>
+<img src="/la-taniere/logo.png">
+<h1>La Tanière</h1>
+<button class="nav-btn active" onclick="showPage('members',this)">Membres</button>
+<button class="nav-btn" onclick="showPage('cards',this)">Cartes</button>
+<button class="nav-btn" onclick="showPage('scanner',this)">Scanner</button>
 </nav>
 
-<div id="members" class="page active">
-<button onclick="openModal()">+ Nouveau membre</button>
-<div id="list"></div>
+<!-- MEMBERS -->
+<div class="page active" id="page-members">
+<div class="table-wrap">
+<div class="table-header">
+<input class="search-box" id="searchInput" placeholder="Rechercher..." oninput="renderMembers()">
+<button class="btn btn-primary" onclick="openModal()">+ Ajouter</button>
+</div>
+<table>
+<thead><tr><th>N°</th><th>Prénom</th><th>Nom</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody id="membersTable"></tbody>
+</table>
+</div>
 </div>
 
-<div id="cards" class="page">
+<!-- CARDS -->
+<div class="page" id="page-cards">
 <div class="cards-grid" id="cardsGrid"></div>
 </div>
 
-<div id="scan" class="page">
+<!-- SCANNER -->
+<div class="page" id="page-scanner">
 <video id="video" style="width:100%"></video>
 <canvas id="canvas" hidden></canvas>
-<div id="result"></div>
-<button onclick="startScan()">Scanner</button>
+<div id="scanResult"></div>
+<button class="btn btn-primary" onclick="startScanner()">Scanner</button>
 </div>
 
-<div class="modal-bg" id="modalBg">
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
 <div class="modal">
-<h3>Ajouter membre</h3>
 <input id="prenom" placeholder="Prénom">
 <input id="nom" placeholder="Nom">
-<input id="email" placeholder="Email">
-<input id="tel" placeholder="Téléphone">
-<button onclick="saveMember()">Enregistrer</button>
-<button onclick="closeModal()">Annuler</button>
+<button class="btn btn-primary" onclick="saveMember()">Enregistrer</button>
+<button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
 </div>
 </div>
 
 <script>
-let db=JSON.parse(localStorage.getItem('db')||'[]');
 
-function save(){localStorage.setItem('db',JSON.stringify(db));}
-function year(){let d=new Date();return(d.getMonth()==11&&d.getDate()>=15)?d.getFullYear()+1:d.getFullYear();}
-function valid(m){return m.year>=new Date().getFullYear();}
-function color(y){if(y==2026)return'card-green';if(y==2027)return'card-blue';if(y==2028)return'card-orange';return'card-expired';}
+let members = JSON.parse(localStorage.getItem("members")||"[]");
 
-function openModal(){modalBg.style.display='flex';}
-function closeModal(){modalBg.style.display='none';}
+function save(){localStorage.setItem("members",JSON.stringify(members));}
+
+function showPage(p,b){
+document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+document.getElementById("page-"+p).classList.add("active");
+document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
+b.classList.add("active");
+}
+
+function openModal(){modal.classList.add("open");}
+function closeModal(){modal.classList.remove("open");}
 
 function saveMember(){
-let m={id:Date.now().toString(),prenom:prenom.value,nom:nom.value,email:email.value,tel:tel.value,year:year()};
-db.push(m);save();closeModal();render();renderCards();}
+members.push({id:Date.now().toString(),prenom:prenom.value,nom:nom.value});
+save();
+closeModal();
+renderMembers();
+renderCards();
+}
 
-function render(){
-list.innerHTML=db.map(m=>`
-<div class='card'>
-<div>${m.prenom} ${m.nom}</div>
-<div>
-<span class='badge ${valid(m)?'green':'red'}'>${valid(m)?'OK':'EXPIRÉ'}</span>
-<button onclick="showMemberCard('${m.id}')">Voir carte</button>
-</div>
-</div>
-`).join('');
+function renderMembers(){
+let s=(searchInput.value||"").toLowerCase();
+membersTable.innerHTML=members.filter(m=>(m.prenom+m.nom).toLowerCase().includes(s)).map(m=>`
+<tr>
+<td>${m.id}</td>
+<td>${m.prenom}</td>
+<td>${m.nom}</td>
+<td><span class="badge badge-green">OK</span></td>
+<td>
+<button class="btn btn-success" onclick="showCard('${m.id}')">Carte</button>
+<button class="btn btn-danger" onclick="deleteMember('${m.id}')">X</button>
+</td>
+</tr>`).join("");
+}
+
+function deleteMember(id){
+members=members.filter(x=>x.id!==id);
+save();
+renderMembers();
 }
 
 function renderCards(){
-cardsGrid.innerHTML='';
-
-db.forEach(m=>{
-let d=document.createElement('div');
-d.className='member-card '+color(m.year);
-d.innerHTML=`<h3>${m.prenom} ${m.nom}</h3><canvas id='qr-${m.id}'></canvas>`;
+cardsGrid.innerHTML="";
+members.forEach(m=>{
+let d=document.createElement("div");
+d.className="member-card card-green";
+d.innerHTML=`<h3>${m.prenom} ${m.nom}</h3><canvas id="qr-${m.id}" class="card-qr"></canvas>`;
 cardsGrid.appendChild(d);
 
 setTimeout(()=>{
-const canvas=document.getElementById('qr-'+m.id);
-if(canvas){QRCode.toCanvas(canvas,"ID:"+m.id,{width:80});}
+let c=document.getElementById("qr-"+m.id);
+if(c) QRCode.toCanvas(c,"ID:"+m.id,{width:70});
 },0);
 });
 }
 
-function showMemberCard(id){
-const m=db.find(x=>x.id===id);
-if(!m)return;
-
-const modal=document.createElement('div');
-modal.className='modal-bg';
-modal.style.display='flex';
-
-modal.innerHTML=`
-<div class='modal'>
+function showCard(id){
+let m=members.find(x=>x.id===id);
+let modal=document.createElement("div");
+modal.className="modal-overlay open";
+modal.innerHTML=`<div class="modal">
 <h3>${m.prenom} ${m.nom}</h3>
-<canvas id='qr-view'></canvas>
-<button onclick="this.closest('.modal-bg').remove()">Fermer</button>
+<canvas id="qr-view"></canvas>
+<button onclick="this.closest('.modal-overlay').remove()">Fermer</button>
 </div>`;
-
 document.body.appendChild(modal);
 
 setTimeout(()=>{
-const canvas=document.getElementById('qr-view');
-if(canvas){QRCode.toCanvas(canvas,"ID:"+m.id,{width:120});}
+QRCode.toCanvas(document.getElementById("qr-view"),"ID:"+m.id,{width:120});
 },0);
 }
 
-function show(p,b){
-document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-document.getElementById(p).classList.add('active');
-document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
-b.classList.add('active');
-}
-
-let stream,interval;
-function startScan(){
-navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{
-stream=s;video.srcObject=s;
-interval=setInterval(()=>{
+function startScanner(){
+navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(s=>{
+video.srcObject=s;
+setInterval(()=>{
 canvas.width=video.videoWidth;
 canvas.height=video.videoHeight;
-let ctx=canvas.getContext('2d');
+let ctx=canvas.getContext("2d");
 ctx.drawImage(video,0,0);
 let img=ctx.getImageData(0,0,canvas.width,canvas.height);
 let code=jsQR(img.data,img.width,img.height);
-if(code){handleScan(code.data);}
+if(code){
+let id=code.data.replace("ID:","");
+let m=members.find(x=>x.id===id);
+scanResult.innerHTML=m
+? `<div class="scan-result scan-ok">✅ ${m.prenom}</div>`
+: `<div class="scan-result scan-unknown">❌ Inconnu</div>`;
+}
 },200);
 });
-}
-
-function handleScan(data){
-let id=data.replace("ID:","");
-let m=db.find(x=>x.id===id);
-
-result.innerHTML=m
-? `<div class='scan-box scan-ok'>✅ ${m.prenom}</div>`
-: `<div class='scan-box scan-bad'>❌ Inconnu</div>`;
 }
 
 if("serviceWorker" in navigator){
 navigator.serviceWorker.register("/la-taniere/sw.js");
 }
 
-render();
+renderMembers();
 renderCards();
+
 </script>
+
 </body>
-</h
+</html>
