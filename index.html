@@ -3,98 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Association Manager V4</title>
+<title>La Tanière</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="/la-taniere/logo.png">
-<link rel="apple-touch-icon" href="/la-taniere/logo.png">
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js">// ================= IMPORT CSV =================
-function importCSVFile(file){
- const reader=new FileReader();
- reader.onload=e=>{
-  const lines=e.target.result.split('\n').filter(l=>l.trim());
-  let added=0;
-  lines.forEach((line,i)=>{
-   const cols=line.split(/[,;]/).map(c=>c.trim());
-   if(i===0) return; // skip header
-   if(cols.length<2) return;
-   let m={
-    id:Date.now()+"_"+i,
-    prenom:cols[0],
-    nom:cols[1],
-    year:parseInt(cols[3])||year()
-   };
-   db.push(m);
-   added++;
-  });
-  save();render();renderCards();
-  alert(added+" membres importés");
- };
- reader.readAsText(file);
-}
-
-function handleImport(e){
- const file=e.target.files[0];
- if(file) importCSVFile(file);
-}
-
-// ================= EXPORT CSV =================
-function exportCSV(){
- let rows=[["prenom","nom","annee"]];
- db.forEach(m=>rows.push([m.prenom,m.nom,m.year]));
- let csv=rows.map(r=>r.join(";")).join("\n");
- let blob=new Blob([csv],{type:"text/csv"});
- let a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="membres.csv";
- a.click();
-}
-
-// UI buttons
-const importBtn=document.createElement("input");
-importBtn.type="file";
-importBtn.accept=".csv";
-importBtn.onchange=handleImport;
-document.body.appendChild(importBtn);
-
-const exportBtn=document.createElement("button");
-exportBtn.innerText="Exporter CSV";
-exportBtn.onclick=exportCSV;
-document.body.appendChild(exportBtn);
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
-body{margin:0;font-family:Arial;background:#1a1a1a;color:#333}
-nav{background:#1a1a1a;padding:10px 20px;display:flex;align-items:center;border-bottom:3px solid #ff7a00}
-nav h1{color:#ff7a00;font-size:18px;flex:1}
-.nav-btn{background:none;border:none;color:#ccc;margin:0 5px;cursor:pointer}
-.nav-btn.active{color:#ff7a00}
-.page{display:none;padding:20px}
+body{margin:0;font-family:system-ui;background:#0f172a;color:#fff}
+nav{display:flex;align-items:center;padding:12px 20px;background:#020617;border-bottom:2px solid #f97316}
+nav h1{color:#f97316;font-size:18px;margin:0;flex:1}
+.nav-btn{background:none;border:none;color:#94a3b8;margin:0 6px;font-size:14px;cursor:pointer}
+.nav-btn.active{color:#f97316;font-weight:bold}
+.page{display:none;padding:20px;max-width:900px;margin:auto}
 .page.active{display:block}
-.card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px}
+
+input{padding:10px;border-radius:8px;border:none;margin:5px 0;width:100%;background:#1e293b;color:#fff}
+button{padding:10px 14px;border:none;border-radius:8px;background:#f97316;color:#fff;cursor:pointer}
+button:hover{background:#ea580c}
+
+.card{background:#1e293b;padding:12px;border-radius:10px;margin:10px 0;display:flex;justify-content:space-between;align-items:center}
 .badge{padding:4px 10px;border-radius:20px;font-size:12px}
-.green{background:#d4edda;color:#155724}
-.red{background:#f8d7da;color:#721c24}
-.orange{background:#fff3cd;color:#856404}
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:15px}
-.member-card{border-radius:14px;padding:20px;color:#fff;position:relative}
-.card-green{background:linear-gradient(135deg,#1a7a3c,#2ecc71)}
-.card-blue{background:linear-gradient(135deg,#1a3a7a,#3498db)}
-.card-orange{background:linear-gradient(135deg,#7a3a1a,#e67e22)}
-.card-expired{background:#555}
+.green{background:#16a34a}
+.red{background:#dc2626}
+
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.member-card{border-radius:16px;padding:20px;color:#fff;box-shadow:0 10px 20px rgba(0,0,0,0.3)}
+.card-green{background:linear-gradient(135deg,#16a34a,#22c55e)}
+.card-blue{background:linear-gradient(135deg,#2563eb,#3b82f6)}
+.card-orange{background:linear-gradient(135deg,#ea580c,#fb923c)}
+.card-expired{background:#374151}
+
+.scan-box{margin-top:20px;padding:20px;border-radius:12px;text-align:center;font-size:18px}
+.scan-ok{background:#16a34a}
+.scan-bad{background:#dc2626}
+
 </style>
 </head>
 <body>
 <nav>
-<h1>Association</h1>
+<h1>🦊 La Tanière</h1>
 <button class="nav-btn active" onclick="show('members',this)">Membres</button>
 <button class="nav-btn" onclick="show('cards',this)">Cartes</button>
 <button class="nav-btn" onclick="show('scan',this)">Scanner</button>
 </nav>
 
 <div id="members" class="page active">
-<input id="search" placeholder="Recherche..." oninput="render()">
-<button onclick="add()">+ Ajouter</button>
+<input id="search" placeholder="🔎 Rechercher..." oninput="render()">
+<button onclick="add()">+ Ajouter un membre</button>
 <div id="list"></div>
 </div>
 
@@ -103,74 +58,33 @@ nav h1{color:#ff7a00;font-size:18px;flex:1}
 </div>
 
 <div id="scan" class="page">
-<video id="video" style="width:100%"></video>
+<video id="video" style="width:100%;border-radius:12px"></video>
 <canvas id="canvas" hidden></canvas>
 <div id="result"></div>
-<button onclick="startScan()">Démarrer</button>
+<button onclick="startScan()">📷 Scanner</button>
 </div>
 
 <script>
 let db=JSON.parse(localStorage.getItem('db')||'[]');
-
 function save(){localStorage.setItem('db',JSON.stringify(db));}
-
-function year(){let d=new Date();return (d.getMonth()==11&&d.getDate()>=15)?d.getFullYear()+1:d.getFullYear();}
-
-function color(y){if(y==2026)return 'card-green';if(y==2027)return 'card-blue';if(y==2028)return 'card-orange';return 'card-expired';}
-
+function year(){let d=new Date();return(d.getMonth()==11&&d.getDate()>=15)?d.getFullYear()+1:d.getFullYear();}
+function color(y){if(y==2026)return'card-green';if(y==2027)return'card-blue';if(y==2028)return'card-orange';return'card-expired';}
 function valid(m){return m.year>=new Date().getFullYear();}
 
-function add(){
-let m={id:Date.now().toString(),prenom:prompt('Prénom'),nom:prompt('Nom'),year:year()};
-db.push(m);save();render();renderCards();}
+function add(){let prenom=prompt('Prénom');let nom=prompt('Nom');if(!prenom||!nom)return;let m={id:Date.now().toString(),prenom,nom,year:year()};db.push(m);save();render();renderCards();}
 
-function render(){
-let q=search.value?.toLowerCase()||'';
-list.innerHTML=db.filter(m=>m.prenom.toLowerCase().includes(q)||m.nom.toLowerCase().includes(q)).map(m=>`
-<div class='card'>${m.prenom} ${m.nom} - ${m.year} 
-<span class='badge ${valid(m)?'green':'red'}'>${valid(m)?'OK':'EXPIRÉ'}</span>
-</div>`).join('');
-}
+function render(){let q=search.value?.toLowerCase()||'';list.innerHTML=db.filter(m=>m.prenom.toLowerCase().includes(q)||m.nom.toLowerCase().includes(q)).map(m=>`<div class='card'><div>${m.prenom} ${m.nom}</div><span class='badge ${valid(m)?'green':'red'}'>${valid(m)?'OK':'EXPIRÉ'}</span></div>`).join('');}
 
-function renderCards(){
-cardsGrid.innerHTML='';
-db.forEach(m=>{
-let div=document.createElement('div');
-div.className='member-card '+color(m.year);
-div.innerHTML=`<h3>${m.prenom} ${m.nom}</h3><p>${m.year}</p><canvas id='qr-${m.id}'></canvas>`;
-cardsGrid.appendChild(div);
-QRCode.toCanvas(document.getElementById('qr-'+m.id), JSON.stringify(m));
-});
-}
+function renderCards(){cardsGrid.innerHTML='';db.forEach(m=>{let div=document.createElement('div');div.className='member-card '+color(m.year);div.innerHTML=`<h3>${m.prenom} ${m.nom}</h3><p>Année ${m.year}</p><canvas id='qr-${m.id}'></canvas>`;cardsGrid.appendChild(div);QRCode.toCanvas(document.getElementById('qr-'+m.id),JSON.stringify(m));});}
 
 function show(p,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 
 let stream,interval;
-function startScan(){
-navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{
-stream=s;video.srcObject=s;
-interval=setInterval(()=>{
-canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-let ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);
-let img=ctx.getImageData(0,0,canvas.width,canvas.height);
-let code=jsQR(img.data,img.width,img.height);
-if(code){clearInterval(interval);stream.getTracks().forEach(t=>t.stop());check(code.data);}
-},300);
-});}
+function startScan(){navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{stream=s;video.srcObject=s;interval=setInterval(()=>{canvas.width=video.videoWidth;canvas.height=video.videoHeight;let ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);let img=ctx.getImageData(0,0,canvas.width,canvas.height);let code=jsQR(img.data,img.width,img.height);if(code){clearInterval(interval);stream.getTracks().forEach(t=>t.stop());check(code.data);}},300);});}
 
-function check(data){
-let m=db.find(x=>JSON.stringify(x)==data);
-if(m)result.innerHTML=`<div class='badge green'>${m.prenom} OK</div>`;
-else result.innerHTML=`<div class='badge red'>Inconnu</div>`;
-}
+function check(data){let m=db.find(x=>JSON.stringify(x)==data);if(m){result.innerHTML=`<div class='scan-box scan-ok'>✅ ${m.prenom} OK</div>`;}else{result.innerHTML=`<div class='scan-box scan-bad'>❌ Inconnu</div>`;}}
 
 render();renderCards();
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/la-taniere/sw.js");
-}
-
 </script>
-
 </body>
 </html>
