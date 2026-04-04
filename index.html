@@ -3,105 +3,852 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Tanière V5</title>
-<link rel="manifest" href="manifest.json">
+<title>La Tanière - Gestion des membres</title>
+<link rel="manifest" href="/la-taniere/manifest.json">
 <link rel="icon" href="/la-taniere/logo.png">
+<meta name="theme-color" content="#e07b00">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
-body{margin:0;font-family:system-ui;background:#0f172a;color:#fff}
-nav{display:flex;align-items:center;padding:12px 20px;background:#020617;border-bottom:2px solid #f97316}
-nav h1{color:#f97316;font-size:18px;margin:0;flex:1}
-.nav-btn{background:none;border:none;color:#94a3b8;margin:0 6px;cursor:pointer}
-.nav-btn.active{color:#f97316}
-.page{display:none;padding:20px;max-width:900px;margin:auto}
-.page.active{display:block}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: Arial, sans-serif; background:#1a1a1a; color:#333; }
 
-button{padding:10px;border:none;border-radius:8px;background:#f97316;color:#fff;cursor:pointer}
-input{padding:10px;border-radius:8px;border:none;background:#1e293b;color:#fff;width:100%;margin:5px 0}
+#loginScreen {
+  display:flex; align-items:center; justify-content:center;
+  height:100vh; background:#1a1a1a;
+}
+.login-box {
+  background:#fff; padding:40px; border-radius:12px;
+  width:360px; text-align:center; box-shadow:0 0 30px rgba(0,0,0,0.5);
+}
+.login-box img { width:120px; margin-bottom:20px; }
+.login-box h2 { color:#e07b00; margin-bottom:8px; }
+.login-box p { color:#666; margin-bottom:24px; font-size:14px; }
+.login-box input {
+  width:100%; padding:12px; margin-bottom:12px;
+  border:2px solid #ddd; border-radius:8px; font-size:15px;
+}
+.login-box input:focus { outline:none; border-color:#e07b00; }
+.btn-login {
+  width:100%; padding:12px; background:#e07b00; color:#fff;
+  border:none; border-radius:8px; font-size:16px; cursor:pointer; font-weight:bold;
+}
+.btn-login:hover { background:#c96a00; }
+.login-error { color:red; margin-top:10px; font-size:14px; display:none; }
 
-.card{background:#1e293b;padding:12px;border-radius:10px;margin:10px 0;display:flex;justify-content:space-between}
-.badge{padding:4px 10px;border-radius:20px}
-.green{background:#16a34a}
-.red{background:#dc2626}
+#app { display:none; }
 
-.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center}
-.modal{background:#020617;padding:20px;border-radius:12px;width:90%;max-width:400px}
+nav {
+  background:#1a1a1a; padding:0 24px;
+  display:flex; align-items:center; gap:8px;
+  border-bottom:3px solid #e07b00;
+}
+nav img { width:50px; padding:8px 0; }
+nav h1 { color:#e07b00; font-size:18px; flex:1; margin-left:12px; }
+.nav-btn {
+  padding:10px 18px; background:none; border:none;
+  color:#ccc; cursor:pointer; font-size:14px;
+  border-bottom:3px solid transparent; margin-bottom:-3px;
+}
+.nav-btn:hover, .nav-btn.active { color:#e07b00; border-bottom-color:#e07b00; }
+.nav-logout {
+  padding:8px 16px; background:#e07b00; color:#fff;
+  border:none; border-radius:6px; cursor:pointer; font-size:13px; margin-left:12px;
+}
 
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.member-card{border-radius:16px;padding:20px;color:#fff}
-.card-green{background:linear-gradient(135deg,#16a34a,#22c55e)}
-.card-blue{background:linear-gradient(135deg,#2563eb,#3b82f6)}
-.card-orange{background:linear-gradient(135deg,#ea580c,#fb923c)}
-.card-expired{background:#374151}
+.page { display:none; padding:24px; max-width:1200px; margin:0 auto; }
+.page.active { display:block; }
 
-.scan-box{margin-top:20px;padding:20px;border-radius:12px;text-align:center;font-size:18px}
-.scan-ok{background:#16a34a}
-.scan-bad{background:#dc2626}
+.stats-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:16px; margin-bottom:24px;
+}
+.stat-card {
+  background:#fff; border-radius:10px; padding:20px; text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08); border-top:4px solid #e07b00;
+}
+.stat-card .number { font-size:34px; font-weight:bold; color:#e07b00; }
+.stat-card .label { color:#666; font-size:13px; margin-top:4px; }
+
+.table-wrap {
+  background:#fff; border-radius:10px;
+  overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+.table-header {
+  padding:16px 20px; display:flex; align-items:center;
+  gap:12px; border-bottom:1px solid #eee; flex-wrap:wrap;
+}
+.table-header h3 { flex:1; color:#333; }
+
+input[type=text], input[type=email], input[type=tel],
+input[type=date], input[type=number], select, textarea {
+  padding:8px 12px; border:2px solid #ddd; border-radius:6px; font-size:14px;
+}
+input:focus, select:focus, textarea:focus { outline:none; border-color:#e07b00; }
+.search-box { padding:8px 12px; border:2px solid #ddd; border-radius:6px; width:240px; font-size:14px; }
+.search-box:focus { outline:none; border-color:#e07b00; }
+
+table { width:100%; border-collapse:collapse; }
+th {
+  background:#f5f5f5; padding:12px 16px; text-align:left;
+  font-size:13px; color:#666; border-bottom:2px solid #eee;
+}
+td { padding:11px 16px; font-size:14px; border-bottom:1px solid #f0f0f0; }
+tr:hover td { background:#fffaf5; }
+
+.badge {
+  display:inline-block; padding:4px 10px;
+  border-radius:20px; font-size:12px; font-weight:bold;
+}
+.badge-green  { background:#d4edda; color:#155724; }
+.badge-blue   { background:#d1ecf1; color:#0c5460; }
+.badge-orange { background:#fff3cd; color:#856404; }
+.badge-red    { background:#f8d7da; color:#721c24; }
+
+.btn {
+  padding:8px 16px; border:none; border-radius:6px;
+  cursor:pointer; font-size:13px; font-weight:bold; transition:all 0.2s;
+}
+.btn-primary   { background:#e07b00; color:#fff; }
+.btn-primary:hover { background:#c96a00; }
+.btn-success   { background:#28a745; color:#fff; }
+.btn-success:hover { background:#218838; }
+.btn-danger    { background:#dc3545; color:#fff; }
+.btn-danger:hover  { background:#c82333; }
+.btn-secondary { background:#6c757d; color:#fff; }
+.btn-secondary:hover { background:#5a6268; }
+.btn-sm { padding:5px 10px; font-size:12px; }
+
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.6); z-index:1000;
+  align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:#fff; border-radius:12px; padding:28px;
+  width:90%; max-width:540px; max-height:90vh; overflow-y:auto;
+  box-shadow:0 10px 40px rgba(0,0,0,0.3);
+}
+.modal h3 { margin-bottom:20px; color:#e07b00; font-size:18px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; font-size:13px; color:#555; margin-bottom:4px; font-weight:bold; }
+.form-group input, .form-group select, .form-group textarea { width:100%; }
+.form-group textarea { height:70px; resize:vertical; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+/* CARTES MEMBRES */
+.cards-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:20px;
+}
+.member-card {
+  width:100%; border-radius:14px; padding:20px;
+  color:#fff; position:relative; overflow:hidden;
+  box-shadow:0 8px 24px rgba(0,0,0,0.2); font-family:Arial,sans-serif;
+}
+.card-green  { background:linear-gradient(135deg,#1a7a3c,#2ecc71); }
+.card-blue   { background:linear-gradient(135deg,#1a3a7a,#3498db); }
+.card-purple { background:linear-gradient(135deg,#5a1a7a,#9b59b6); }
+.card-expired{ background:linear-gradient(135deg,#444,#888); }
+
+.card-pattern {
+  position:absolute; top:-30px; right:-30px;
+  width:150px; height:150px; border-radius:50%;
+  background:rgba(255,255,255,0.07);
+}
+.card-pattern2 {
+  position:absolute; bottom:-50px; left:-20px;
+  width:180px; height:180px; border-radius:50%;
+  background:rgba(255,255,255,0.05);
+}
+.card-logo { width:48px; opacity:0.9; }
+.card-assoc { font-size:11px; opacity:0.75; margin-top:2px; letter-spacing:1px; }
+.card-name  { font-size:20px; font-weight:bold; margin-top:14px; }
+.card-num   { font-size:12px; opacity:0.8; margin-top:3px; }
+.card-bottom {
+  display:flex; justify-content:space-between;
+  align-items:flex-end; margin-top:16px; gap:10px;
+}
+.card-info  { font-size:11px; opacity:0.85; line-height:1.6; }
+.card-qr    { border-radius:6px; background:#fff; padding:4px; flex-shrink:0; }
+
+/* SCANNER */
+#scannerVideo { width:100%; border-radius:8px; max-height:300px; object-fit:cover; display:none; }
+#scannerCanvas { display:none; }
+.scan-result {
+  padding:20px; border-radius:10px; margin-top:16px;
+  text-align:center; font-size:16px; font-weight:bold; line-height:1.8;
+}
+.scan-ok      { background:#d4edda; color:#155724; border:2px solid #28a745; }
+.scan-unknown { background:#f8d7da; color:#721c24; border:2px solid #dc3545; }
+.scan-expired { background:#fff3cd; color:#856404; border:2px solid #ffc107; }
+
+/* IMPORT */
+.drop-zone {
+  border:3px dashed #e07b00; border-radius:10px;
+  padding:40px; text-align:center; color:#999;
+  cursor:pointer; transition:all 0.2s; background:#fff; display:block;
+}
+.drop-zone:hover { background:#fffaf5; color:#e07b00; }
+.drop-zone input { display:none; }
+
+@media(max-width:600px){
+  .form-row { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  nav h1 { display:none; }
+  .nav-btn { padding:10px 8px; font-size:11px; }
+}
 </style>
 </head>
 <body>
-<nav>
-<h1>🦊 La Tanière</h1>
-<button class="nav-btn active" onclick="show('members',this)">Membres</button>
-<button class="nav-btn" onclick="show('cards',this)">Cartes</button>
-<button class="nav-btn" onclick="show('scan',this)">Scanner</button>
-</nav>
 
-<div id="members" class="page active">
-<button onclick="openModal()">+ Nouveau membre</button>
-<div id="list"></div>
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="/la-taniere/logo.png" alt="La Tanière" onerror="this.style.display='none'">
+    <h2>La Tanière</h2>
+    <p>Accès réservé aux membres du bureau</p>
+    <input type="text" id="loginUser" placeholder="Identifiant">
+    <input type="password" id="loginPass" placeholder="Mot de passe">
+    <button class="btn-login" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="loginError">Identifiants incorrects</div>
+  </div>
 </div>
 
-<div id="cards" class="page">
-<div class="cards-grid" id="cardsGrid"></div>
+<!-- ===== APP ===== -->
+<div id="app">
+  <nav>
+    <img src="/la-taniere/logo.png" alt="" onerror="this.style.display='none'">
+    <h1>La Tanière</h1>
+    <button class="nav-btn active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+    <button class="nav-btn" onclick="showPage('members',this)">👥 Membres</button>
+    <button class="nav-btn" onclick="showPage('cards',this)">💳 Cartes</button>
+    <button class="nav-btn" onclick="showPage('scanner',this)">📷 Scanner</button>
+    <button class="nav-btn" onclick="showPage('import',this)">📥 Import</button>
+    <button class="nav-logout" onclick="doLogout()">Déconnexion</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number" id="statTotal">0</div>
+        <div class="label">Membres total</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="statActive">0</div>
+        <div class="label">Actifs cette année</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="statExpired">0</div>
+        <div class="label">Expirés / Inactifs</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="statNew">0</div>
+        <div class="label">Nouveaux (30j)</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="statCotis">0 €</div>
+        <div class="label">Cotisations (année en cours)</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><h3>Derniers membres ajoutés</h3></div>
+      <table>
+        <thead><tr>
+          <th>N°</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Cotisation</th><th>Statut</th>
+        </tr></thead>
+        <tbody id="dashboardTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MEMBRES -->
+  <div class="page" id="page-members">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>👥 Membres</h3>
+        <input class="search-box" type="text" id="searchInput" placeholder="Rechercher..." oninput="renderMembers()">
+        <button class="btn btn-primary" onclick="openAddModal()">+ Ajouter</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>N°</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Date adhésion</th><th>Cotisation</th><th>Statut</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="membersTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CARTES -->
+  <div class="page" id="page-cards">
+    <div style="margin-bottom:16px;">
+      <input class="search-box" type="text" id="cardSearch" placeholder="Rechercher..." oninput="renderCards()">
+    </div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <!-- SCANNER -->
+  <div class="page" id="page-scanner">
+    <div style="max-width:500px; margin:0 auto;">
+      <div class="table-wrap" style="padding:24px;">
+        <h3 style="margin-bottom:16px; color:#e07b00;">📷 Scanner une carte membre</h3>
+        <video id="scannerVideo" autoplay playsinline></video>
+        <canvas id="scannerCanvas"></canvas>
+        <div style="margin-top:12px; display:flex; gap:10px;">
+          <button class="btn btn-primary" id="startScanBtn" onclick="startScanner()">▶ Démarrer</button>
+          <button class="btn btn-secondary" id="stopScanBtn" onclick="stopScanner()" style="display:none">⏹ Arrêter</button>
+        </div>
+        <div id="scanResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT / EXPORT -->
+  <div class="page" id="page-import">
+    <div style="max-width:640px; margin:0 auto; display:flex; flex-direction:column; gap:20px;">
+
+      <div class="table-wrap" style="padding:24px;">
+        <h3 style="margin-bottom:8px; color:#e07b00;">📥 Import CSV</h3>
+        <p style="color:#666; font-size:13px; margin-bottom:18px;">
+          Colonnes attendues : <strong>prénom ; nom ; n° adhérent ; date adhésion ; téléphone ; email ; cotisation ; notes</strong>
+        </p>
+        <label class="drop-zone" for="csvFile">
+          <div style="font-size:36px;">📂</div>
+          <div style="margin-top:10px; font-size:15px;">Cliquez ou glissez votre fichier CSV ici</div>
+          <input type="file" id="csvFile" accept=".csv" onchange="importCSV(this)">
+        </label>
+        <div id="importResult" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="table-wrap" style="padding:24px;">
+        <h3 style="margin-bottom:16px; color:#e07b00;">💾 Export &amp; Sauvegarde</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-success" onclick="exportCSV()">⬇ Exporter CSV</button>
+          <button class="btn btn-danger" onclick="clearAllData()">🗑 Effacer toutes les données</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-<div id="scan" class="page">
-<video id="video" style="width:100%"></video>
-<canvas id="canvas" hidden></canvas>
-<div id="result"></div>
-<button onclick="startScan()">Scanner</button>
-</div>
-
-<div class="modal-bg" id="modalBg">
-<div class="modal">
-<h3>Ajouter membre</h3>
-<input id="prenom" placeholder="Prénom">
-<input id="nom" placeholder="Nom">
-<input id="email" placeholder="Email">
-<input id="tel" placeholder="Téléphone">
-<button onclick="saveMember()">Enregistrer</button>
-<button onclick="closeModal()">Annuler</button>
-</div>
+<!-- MODAL MEMBRE -->
+<div class="modal-overlay" id="memberModal">
+  <div class="modal">
+    <h3 id="modalTitle">Ajouter un membre</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Prénom *</label>
+        <input type="text" id="fPrenom" placeholder="Jean">
+      </div>
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" id="fNom" placeholder="Dupont">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>N° adhérent</label>
+        <input type="text" id="fNumero" placeholder="Auto">
+      </div>
+      <div class="form-group">
+        <label>Date d'adhésion</label>
+        <input type="date" id="fDate">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="tel" id="fTel" placeholder="06 00 00 00 00">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="fEmail" placeholder="jean@mail.com">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Montant cotisation (€)</label>
+        <input type="number" id="fCotisation" placeholder="0" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Rôle</label>
+        <select id="fRole">
+          <option value="simple">Membre simple</option>
+          <option value="benevole">Bénévole</option>
+          <option value="bureau">Bureau</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="fNotes" placeholder="Remarques..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMember()">Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 <script>
-let db=JSON.parse(localStorage.getItem('db')||'[]');
-function save(){localStorage.setItem('db',JSON.stringify(db));}
-function year(){let d=new Date();return(d.getMonth()==11&&d.getDate()>=15)?d.getFullYear()+1:d.getFullYear();}
-function valid(m){return m.year>=new Date().getFullYear();}
-function color(y){if(y==2026)return'card-green';if(y==2027)return'card-blue';if(y==2028)return'card-orange';return'card-expired';}
+// ==================== CONFIG ====================
+const LOGIN_USER = 'bureau';
+const LOGIN_PASS = 'taniere2024';
+const CURRENT_YEAR = new Date().getFullYear();
 
-function openModal(){modalBg.style.display='flex';}
-function closeModal(){modalBg.style.display='none';}
+// ==================== LOGIN ====================
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if (u === LOGIN_USER && p === LOGIN_PASS) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadAll();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
 
-function saveMember(){
-let m={id:Date.now().toString(),prenom:prenom.value,nom:nom.value,email:email.value,tel:tel.value,year:year()};
-db.push(m);save();closeModal();render();renderCards();}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
 
-function render(){list.innerHTML=db.map(m=>`<div class='card'>${m.prenom} ${m.nom}<span class='badge ${valid(m)?'green':'red'}'>${valid(m)?'OK':'EXPIRÉ'}</span></div>`).join('');}
+function doLogout() {
+  stopScanner();
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
 
-function renderCards(){cardsGrid.innerHTML='';db.forEach(m=>{let d=document.createElement('div');d.className='member-card '+color(m.year);d.innerHTML=`<h3>${m.prenom} ${m.nom}</h3><canvas id='qr-${m.id}'></canvas>`;cardsGrid.appendChild(d);QRCode.toCanvas(document.getElementById('qr-'+m.id),JSON.stringify(m));});}
+// ==================== NAVIGATION ====================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'members')   renderMembers();
+  if (name === 'cards')     renderCards();
+}
 
-function show(p,b){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+// ==================== DONNÉES ====================
+let members = [];
 
-let stream,interval;
-function startScan(){navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{stream=s;video.srcObject=s;interval=setInterval(()=>{canvas.width=video.videoWidth;canvas.height=video.videoHeight;let ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);let img=ctx.getImageData(0,0,canvas.width,canvas.height);let code=jsQR(img.data,img.width,img.height);if(code){clearInterval(interval);stream.getTracks().forEach(t=>t.stop());check(code.data);}},300);});}
+function loadAll() {
+  const saved = localStorage.getItem('taniere_members');
+  members = saved ? JSON.parse(saved) : [];
+  renderDashboard();
+  renderMembers();
+}
 
-function check(data){let m=db.find(x=>JSON.stringify(x)==data);result.innerHTML=m?`<div class='scan-box scan-ok'>${m.prenom}</div>`:`<div class='scan-box scan-bad'>Inconnu</div>`;}
+function saveAll() {
+  localStorage.setItem('taniere_members', JSON.stringify(members));
+}
 
-render();renderCards();
+function getMemberYear(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).getFullYear();
+}
+
+function getStatus(m) {
+  const y = getMemberYear(m.date);
+  if (!y) return 'unknown';
+  if (y === CURRENT_YEAR) return 'active';
+  if (y === CURRENT_YEAR + 1) return 'next';
+  if (y === CURRENT_YEAR - 1) return 'recent';
+  return 'expired';
+}
+
+function getStatusBadge(m) {
+  const s = getStatus(m);
+  const y = getMemberYear(m.date) || '';
+  if (s === 'active') return `<span class="badge badge-green">✓ Actif ${y}</span>`;
+  if (s === 'next')   return `<span class="badge badge-blue">✓ Actif ${y}</span>`;
+  if (s === 'recent') return `<span class="badge badge-orange">⚠ Expiré ${y}</span>`;
+  if (s === 'unknown')return `<span class="badge badge-red">? Inconnu</span>`;
+  return `<span class="badge badge-red">✗ Inactif ${y}</span>`;
+}
+
+function getCardClass(m) {
+  const s = getStatus(m);
+  if (s === 'active') return 'card-green';
+  if (s === 'next')   return 'card-blue';
+  if (s === 'recent') return 'card-purple';
+  return 'card-expired';
+}
+
+function nextNumero() {
+  if (!members.length) return '0001';
+  const max = Math.max(...members.map(m => parseInt(m.numero) || 0));
+  return String(max + 1).padStart(4, '0');
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString('fr-FR');
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+  const total   = members.length;
+  const active  = members.filter(m => ['active','next'].includes(getStatus(m))).length;
+  const expired = members.filter(m => ['recent','expired','unknown'].includes(getStatus(m))).length;
+  const now     = Date.now();
+  const newM    = members.filter(m => m.date && (now - new Date(m.date)) / 86400000 <= 30).length;
+  const cotisTotal = members
+    .filter(m => getMemberYear(m.date) === CURRENT_YEAR)
+    .reduce((acc, m) => acc + (parseFloat(m.cotisation) || 0), 0);
+
+  document.getElementById('statTotal').textContent   = total;
+  document.getElementById('statActive').textContent  = active;
+  document.getElementById('statExpired').textContent = expired;
+  document.getElementById('statNew').textContent     = newM;
+  document.getElementById('statCotis').textContent   = cotisTotal.toFixed(2) + ' €';
+
+  const recent = [...members]
+    .sort((a,b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
+
+  document.getElementById('dashboardTable').innerHTML = recent.map(m => `
+    <tr>
+      <td>${m.numero}</td>
+      <td>${m.prenom}</td>
+      <td>${m.nom}</td>
+      <td>${m.email || '-'}</td>
+      <td>${m.cotisation ? m.cotisation + ' €' : '-'}</td>
+      <td>${getStatusBadge(m)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:#999;padding:24px">Aucun membre</td></tr>';
+}
+
+// ==================== MEMBRES ====================
+function renderMembers() {
+  const s = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const list = members.filter(m =>
+    (m.prenom+m.nom+m.email+m.numero+m.tel).toLowerCase().includes(s)
+  );
+  document.getElementById('membersTable').innerHTML = list.map(m => `
+    <tr>
+      <td>${m.numero}</td>
+      <td>${m.prenom}</td>
+      <td>${m.nom}</td>
+      <td>${m.email || '-'}</td>
+      <td>${m.tel || '-'}</td>
+      <td>${formatDate(m.date)}</td>
+      <td>${m.cotisation ? m.cotisation + ' €' : '-'}</td>
+      <td>${getStatusBadge(m)}</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="openEditModal('${m.id}')">✏</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="9" style="text-align:center;color:#999;padding:24px">Aucun membre</td></tr>';
+}
+
+// ==================== MODAL ====================
+let editingId = null;
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Ajouter un membre';
+  document.getElementById('fPrenom').value    = '';
+  document.getElementById('fNom').value       = '';
+  document.getElementById('fNumero').value    = nextNumero();
+  document.getElementById('fDate').value      = new Date().toISOString().split('T')[0];
+  document.getElementById('fTel').value       = '';
+  document.getElementById('fEmail').value     = '';
+  document.getElementById('fCotisation').value= '';
+  document.getElementById('fRole').value      = 'simple';
+  document.getElementById('fNotes').value     = '';
+  document.getElementById('memberModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const m = members.find(x => x.id === id);
+  if (!m) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Modifier le membre';
+  document.getElementById('fPrenom').value    = m.prenom;
+  document.getElementById('fNom').value       = m.nom;
+  document.getElementById('fNumero').value    = m.numero;
+  document.getElementById('fDate').value      = m.date || '';
+  document.getElementById('fTel').value       = m.tel || '';
+  document.getElementById('fEmail').value     = m.email || '';
+  document.getElementById('fCotisation').value= m.cotisation || '';
+  document.getElementById('fRole').value      = m.role || 'simple';
+  document.getElementById('fNotes').value     = m.notes || '';
+  document.getElementById('memberModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('memberModal').classList.remove('open');
+}
+
+function saveMember() {
+  const prenom = document.getElementById('fPrenom').value.trim();
+  const nom    = document.getElementById('fNom').value.trim();
+  if (!prenom || !nom) { alert('Prénom et nom obligatoires'); return; }
+
+  const data = {
+    prenom, nom,
+    numero:     document.getElementById('fNumero').value.trim() || nextNumero(),
+    date:       document.getElementById('fDate').value,
+    tel:        document.getElementById('fTel').value.trim(),
+    email:      document.getElementById('fEmail').value.trim(),
+    cotisation: document.getElementById('fCotisation').value,
+    role:       document.getElementById('fRole').value,
+    notes:      document.getElementById('fNotes').value.trim(),
+  };
+
+  if (editingId) {
+    const i = members.findIndex(x => x.id === editingId);
+    members[i] = { ...members[i], ...data };
+  } else {
+    data.id = 'id_' + Date.now();
+    members.push(data);
+  }
+
+  saveAll();
+  closeModal();
+  renderMembers();
+  renderDashboard();
+}
+
+function deleteMember(id) {
+  if (!confirm('Supprimer ce membre ?')) return;
+  members = members.filter(x => x.id !== id);
+  saveAll();
+  renderMembers();
+  renderDashboard();
+}
+
+document.getElementById('memberModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ==================== CARTES ====================
+function renderCards() {
+  const s = (document.getElementById('cardSearch')?.value || '').toLowerCase();
+  const list = members.filter(m =>
+    (m.prenom+m.nom+m.numero).toLowerCase().includes(s)
+  );
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = '';
+
+  if (!list.length) {
+    grid.innerHTML = '<p style="color:#aaa">Aucun membre trouvé</p>';
+    return;
+  }
+
+  list.forEach(m => {
+    const wrap = document.createElement('div');
+    const annee = getMemberYear(m.date) || '';
+    const roleLabel = m.role === 'bureau' ? 'Bureau' : m.role === 'benevole' ? 'Bénévole' : 'Membre';
+
+    wrap.innerHTML = `
+      <div class="member-card ${getCardClass(m)}">
+        <div class="card-pattern"></div>
+        <div class="card-pattern2"></div>
+        <img src="/la-taniere/logo.png" class="card-logo" onerror="this.style.display='none'" alt="">
+        <div class="card-assoc">LA TANIÈRE &nbsp;·&nbsp; ${roleLabel}</div>
+        <div class="card-name">${m.prenom} ${m.nom.toUpperCase()}</div>
+        <div class="card-num">N° ${m.numero}</div>
+        <div class="card-bottom">
+          <div class="card-info">
+            Cotisation ${annee}<br>
+            ${m.cotisation ? m.cotisation + ' €' : ''}<br>
+            ${m.email || ''}
+          </div>
+          <canvas class="card-qr" id="qr-${m.id}" width="72" height="72"></canvas>
+        </div>
+      </div>
+    `;
+    grid.appendChild(wrap);
+
+    const qrData = JSON.stringify({
+      id: m.id, num: m.numero,
+      prenom: m.prenom, nom: m.nom,
+      date: m.date
+    });
+    QRCode.toCanvas(
+      document.getElementById('qr-' + m.id),
+      qrData,
+      { width: 72, margin: 1 },
+      () => {}
+    );
+  });
+}
+
+// ==================== SCANNER ====================
+let scanStream = null;
+let scanInterval = null;
+
+function startScanner() {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      scanStream = stream;
+      const video = document.getElementById('scannerVideo');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      document.getElementById('startScanBtn').style.display = 'none';
+      document.getElementById('stopScanBtn').style.display  = 'inline-block';
+
+      const canvas = document.getElementById('scannerCanvas');
+      scanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(img.data, img.width, img.height);
+        if (code) { stopScanner(); handleScan(code.data); }
+      }, 300);
+    })
+    .catch(() => alert('Impossible d\'accéder à la caméra'));
+}
+
+function stopScanner() {
+  if (scanStream)   { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  document.getElementById('scannerVideo').style.display = 'none';
+  document.getElementById('startScanBtn').style.display = 'inline-block';
+  document.getElementById('stopScanBtn').style.display  = 'none';
+}
+
+function handleScan(data) {
+  let info;
+  try { info = JSON.parse(data); } catch(e) { info = null; }
+
+  const div = document.getElementById('scanResult');
+
+  if (!info || !info.num) {
+    div.innerHTML = `<div class="scan-result scan-unknown">❓ QR code non reconnu</div>`;
+    return;
+  }
+
+  const m = members.find(x => x.id === info.id || x.numero === info.num);
+
+  if (!m) {
+    div.innerHTML = `<div class="scan-result scan-unknown">❌ INCONNU<br><small>N° ${info.num} — non trouvé dans la base</small></div>`;
+    return;
+  }
+
+  const s = getStatus(m);
+  const year = getMemberYear(m.date) || '';
+
+  if (s === 'active' || s === 'next') {
+    div.innerHTML = `
+      <div class="scan-result scan-ok">
+        ✅ MEMBRE ACTIF ${year}<br>
+        <span style="font-size:22px">${m.prenom} ${m.nom}</span><br>
+        <small>N° ${m.numero}${m.cotisation ? ' · ' + m.cotisation + ' €' : ''}</small>
+      </div>`;
+  } else {
+    div.innerHTML = `
+      <div class="scan-result scan-expired">
+        ⚠️ COTISATION EXPIRÉE (${year})<br>
+        <span style="font-size:20px">${m.prenom} ${m.nom}</span><br>
+        <small>N° ${m.numero}</small>
+      </div>`;
+  }
+}
+
+// ==================== IMPORT CSV ====================
+function importCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    let added = 0, skipped = 0;
+
+    lines.forEach((line, i) => {
+      const cols = line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g, ''));
+      if (cols.length < 2) { skipped++; return; }
+      const [prenom, nom, numero, date, tel, email, cotisation, notes] = cols;
+      if (!prenom || !nom) { skipped++; return; }
+      // Ignorer la ligne d'en-tête
+      if (i === 0 && prenom.toLowerCase().includes('pr')) return;
+      // Ignorer les doublons sur le numéro
+      if (numero && members.find(m => m.numero === numero)) { skipped++; return; }
+
+      members.push({
+        id:         'id_' + Date.now() + '_' + i,
+        prenom, nom,
+        numero:     numero || nextNumero(),
+        date:       parseDate(date),
+        tel:        tel        || '',
+        email:      email      || '',
+        cotisation: cotisation || '',
+        role:       'simple',
+        notes:      notes      || ''
+      });
+      added++;
+    });
+
+    saveAll();
+    renderDashboard();
+    renderMembers();
+    document.getElementById('importResult').innerHTML =
+      `<div class="scan-result scan-ok">✅ ${added} importé(s), ${skipped} ignoré(s)</div>`;
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseDate(str) {
+  if (!str) return '';
+  const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  return '';
+}
+
+// ==================== EXPORT CSV ====================
+async function exportCSV() {
+  const rows = [['Prénom','Nom','N° Adhérent','Date adhésion','Téléphone','Email','Cotisation','Rôle','Notes']];
+  members.forEach(m => rows.push([
+    m.prenom, m.nom, m.numero, m.date, m.tel, m.email, m.cotisation, m.role, m.notes
+  ]));
+  const csv = '\uFEFF' + rows.map(r => r.join(';')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+
+  // File System Access API (filepicker natif)
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: `membres_taniere_${new Date().toISOString().split('T')[0]}.csv`,
+        types: [{ description: 'Fichier CSV', accept: { 'text/csv': ['.csv'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch(e) { /* annulé ou non supporté */ }
+  }
+
+  // Fallback classique
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `membres_taniere_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+function clearAllData() {
+  if (!confirm('Effacer TOUS les membres ? Irréversible !')) return;
+  members = [];
+  saveAll();
+  renderDashboard();
+  renderMembers();
+}
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/la-taniere/sw.js");
+}
 </script>
 </body>
 </html>
