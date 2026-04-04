@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Tanière - Gestion Association</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --orange: #FF6B00;
+  --orange-light: #FF8C00;
+  --orange-dark: #CC5500;
+  --anthracite: #2C2C2C;
+  --anthracite-light: #3D3D3D;
+  --anthracite-dark: #1A1A1A;
+  --white: #FFFFFF;
+  --gray: #F5F5F5;
+  --gray-mid: #E0E0E0;
+  --text-light: #888;
+  --success: #4CAF50;
+  --warning: #FF9800;
+  --danger: #F44336;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--anthracite-dark);
+  color: var(--white);
+  min-height: 100vh;
+}
+
+/* ===== LOGIN ===== */
+#login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--anthracite-dark) 0%, var(--anthracite) 100%);
+}
+
+.login-box {
+  background: var(--anthracite-light);
+  padding: 40px;
+  border-radius: 16px;
+  width: 360px;
+  text-align: center;
+  border: 1px solid var(--orange);
+  box-shadow: 0 0 40px rgba(255,107,0,0.2);
+}
+
+.login-box img { width: 120px; margin-bottom: 20px; }
+
+.login-box h1 {
+  color: var(--orange);
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.login-box p {
+  color: var(--text-light);
+  margin-bottom: 30px;
+  font-size: 0.9rem;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--anthracite-dark);
+  background: var(--anthracite-dark);
+  color: var(--white);
+  font-size: 1rem;
+  margin-bottom: 16px;
+  outline: none;
+}
+
+.login-box input:focus { border-color: var(--orange); }
+
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: var(--orange);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-login:hover { background: var(--orange-dark); }
+#login-error { color: var(--danger); margin-top: 12px; font-size: 0.9rem; display: none; }
+
+/* ===== APP ===== */
+#app { display: none; }
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0;
+  width: 220px;
+  height: 100vh;
+  background: var(--anthracite);
+  border-right: 1px solid var(--anthracite-light);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid var(--anthracite-light);
+}
+
+.sidebar-logo img { width: 80px; }
+.sidebar-logo h2 { color: var(--orange); font-size: 1.1rem; margin-top: 8px; }
+
+.sidebar-nav { flex: 1; padding: 16px 0; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  color: var(--text-light);
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.nav-item:hover { background: var(--anthracite-light); color: var(--white); }
+.nav-item.active { background: var(--orange); color: var(--white); }
+.nav-item .icon { font-size: 1.2rem; width: 24px; }
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--anthracite-light);
+}
+
+.btn-logout {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  color: var(--text-light);
+  border: 1px solid var(--anthracite-light);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+/* MAIN */
+.main {
+  margin-left: 220px;
+  min-height: 100vh;
+  background: var(--anthracite-dark);
+}
+
+.topbar {
+  background: var(--anthracite);
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--anthracite-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar h1 { font-size: 1.3rem; color: var(--white); }
+.topbar span { color: var(--text-light); font-size: 0.9rem; }
+
+.content { padding: 24px; }
+
+/* PAGES */
+.page { display: none; }
+.page.active { display: block; }
+
+/* CARDS STATS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--anthracite);
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid var(--orange);
+}
+
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--orange);
+}
+
+.stat-card .stat-label {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* TOOLBAR */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box input {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--anthracite-light);
+  background: var(--anthracite);
+  color: var(--white);
+  font-size: 0.95rem;
+  width: 280px;
+  outline: none;
+}
+
+.search-box input:focus { border-color: var(--orange); }
+
+select {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--anthracite-light);
+  background: var(--anthracite);
+  color: var(--white);
+  font-size: 0.95rem;
+  outline: none;
+  cursor: pointer;
+}
+
+select:focus { border-color: var(--orange); }
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary { background: var(--orange); color: white; }
+.btn-primary:hover { background: var(--orange-dark); }
+.btn-secondary { background: var(--anthracite-light); color: white; }
+.btn-secondary:hover { background: #555; }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+/* TABLE */
+.table-container {
+  background: var(--anthracite);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: var(--anthracite-light);
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--anthracite-light);
+  font-size: 0.9rem;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,107,0,0.05); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-bureau { background: rgba(255,107,0,0.2); color: var(--orange); }
+.badge-benevole { background: rgba(76,175,80,0.2); color: var(--success); }
+.badge-simple { background: rgba(136,136,136,0.2); color: var(--text-light); }
+.badge-actif { background: rgba(76,175,80,0.2); color: var(--success); }
+.badge-expire { background: rgba(244,67,54,0.2); color: var(--danger); }
+.badge-nonpaye { background: rgba(255,152,0,0.2); color: var(--warning); }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--anthracite);
+  border-radius: 16px;
+  padding: 32px;
+  width: 560px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--anthracite-light);
+}
+
+.modal h2 { color: var(--orange); margin-bottom: 24px; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+
+.form-group label { font-size: 0.85rem; color: var(--text-light); }
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--anthracite-light);
+  background: var(--anthracite-dark);
+  color: var(--white);
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+}
+
+.form-group input:focus,
+.form-group select textarea:focus { border-color: var(--orange); }
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* CARTE MEMBRE */
+.carte-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.carte-membre {
+  width: 380px;
+  background: linear-gradient(135deg, var(--anthracite) 0%, var(--anthracite-light) 100%);
+  border-radius: 16px;
+  padding: 24px;
+  border: 2px solid var(--orange);
+  box-shadow: 0 8px 32px rgba(255,107,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.carte-membre::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255,107,0,0.1);
+  border-radius: 50%;
+}
+
+.carte-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.carte-header img { width: 50px; }
+
+.carte-header-text h3 {
+  color: var(--orange);
+  font-size: 1rem;
+}
+
+.carte-header-text p {
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+
+.carte-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.carte-info h2 {
+  font-size: 1.3rem;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.carte-info .carte-num {
+  font-size: 0.8rem;
+  color: var(--orange);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.carte-info .carte-annee {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.carte-info .carte-role {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,107,0,0.2);
+  color: var(--orange);
+  margin-top: 8px;
+}
+
+.carte-qr {
+  background: white;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+/* SCANNER */
+#scanner-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+#scanner-video {
+  width: 100%;
+  border-radius: 12px;
+  border: 2px solid var(--orange);
+}
+
+.scanner-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  border: 3px solid var(--orange);
+  border-radius: 12px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.5);
+}
+
+#scan-result {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  display: none;
+}
+
+.scan-ok { background: rgba(76,175,80,0.2); border: 1px solid var(--success); }
+.scan-ko { background: rgba(244,67,54,0.2); border: 1px solid var(--danger); }
+
+/* IMPORT */
+.import-zone {
+  border: 2px dashed var(--anthracite-light);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-zone:hover { border-color: var(--orange); background: rgba(255,107,0,0.05); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-220px); }
+  .main { margin-left: 0; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+.ml-auto { margin-left: auto; }
+.text-right { text-align: right; }
+.mt-16 { margin-top: 16px; }
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <img src="logo.png" alt="La Tanière" onerror="this.style.display='none'">
+    <h1>🐺 La Tanière</h1>
+    <p>Espace de gestion réservé au bureau</p>
+    <input type="password" id="mdp-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-login" onclick="login()">Se connecter</button>
+    <div id="login-error">❌ Mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="logo.png" alt="La Tanière" onerror="this.style.display='none'">
+      <h2>La Tanière</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('membres')">
+        <span class="icon">👥</span> Membres
+      </div>
+      <div class="nav-item" onclick="showPage('cartes')">
+        <span class="icon">🃏</span> Cartes membres
+      </div>
+      <div class="nav-item" onclick="showPage('scanner')">
+        <span class="icon">📷</span> Scanner
+      </div>
+      <div class="nav-item" onclick="showPage('import')">
+        <span class="icon">📥</span> Import / Export
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">🚪 Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <span id="topbar-date"></span>
+    </div>
+
+    <div class="content">
+
+      <!-- PAGE DASHBOARD -->
+      <div id="page-dashboard" class="page active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Total membres</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-actifs">0</div>
+            <div class="stat-label">Cotisations valides</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-expires">0</div>
+            <div class="stat-label">Cotisations expirées</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-bureau">0</div>
+            <div class="stat-label">Membres bureau</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-montant">0 €</div>
+            <div class="stat-label">Total cotisations encaissées</div>
+          </div>
+        </div>
+
+        <div class="table-container" style="margin-top:8px;">
+          <div style="padding:16px 20px; border-bottom:1px solid var(--anthracite-light);">
+            <strong>📋 Derniers membres ajoutés</strong>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Prénom NOM</th>
+                <th>Rôle</th>
+                <th>Cotisation</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PAGE MEMBRES -->
+      <div id="page-membres" class="page">
+        <div class="toolbar">
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="🔍 Rechercher un membre..." oninput="renderTable()">
+          </div>
+          <select id="filter-role" onchange="renderTable()">
+            <option value="">Tous les rôles</option>
+            <option value="bureau">Bureau</option>
+            <option value="benevole">Bénévole</option>
+            <option value="simple">Membre simple</option>
+          </select>
+          <select id="filter-statut" onchange="renderTable()">
+            <option value="">Tous les statuts</option>
+            <option value="actif">Cotisation valide</option>
+            <option value="expire">Expirée</option>
+          </select>
+          <button class="btn btn-primary ml-auto" onclick="openModal()">➕ Nouveau membre</button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Prénom NOM</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Rôle</th>
+                <th>Cotisation</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="membres-table"></tbody>
+          </table>
+        </div>
+        <div id="table-info" style="padding:12px 0; color:var(--text-light); font-size:0.85rem;"></div>
+      </div>
+
+      <!-- PAGE CARTES -->
+      <div id="page-cartes" class="page">
+        <div class="toolbar">
+          <div class="search-box">
+            <input type="text" id="carte-search" placeholder="🔍 Rechercher un membre..." oninput="renderCarteSearch()">
+          </div>
+        </div>
+        <div id="carte-search-results"></div>
+        <div class="carte-container" id="carte-display" style="display:none;">
+          <div class="carte-membre" id="carte-visuelle">
+            <div class="carte-header">
+              <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+              <div class="carte-header-text">
+                <h3>La Tanière</h3>
+                <p>Carte de membre</p>
+              </div>
+            </div>
+            <div class="carte-body">
+              <div class="carte-info">
+                <h2 id="carte-nom">Prénom NOM</h2>
+                <div class="carte-num" id="carte-numero">N° 0001</div>
+                <div class="carte-annee" id="carte-annee-affich">Année 2025</div>
+                <div class="carte-role" id="carte-role-affich">Membre</div>
+              </div>
+              <div class="carte-qr" id="carte-qr-code"></div>
+            </div>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-primary" onclick="printCarte()">🖨️ Imprimer</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('carte-display').style.display='none'; document.getElementById('carte-search-results').innerHTML=''; document.getElementById('carte-search').value=''">✖️ Fermer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE SCANNER -->
+      <div id="page-scanner" class="page">
+        <div style="max-width:600px; margin:0 auto; text-align:center;">
+          <p style="color:var(--text-light); margin-bottom:20px;">Scannez le QR code de la carte membre pour vérifier l'adhésion.</p>
+          <div id="scanner-container">
+            <video id="scanner-video" autoplay playsinline></video>
+            <div class="scanner-overlay"></div>
+          </div>
+          <div style="margin-top:16px; display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-primary" onclick="startScanner()">▶️ Démarrer</button>
+            <button class="btn btn-secondary" onclick="stopScanner()">⏹️ Arrêter</button>
+          </div>
+          <div id="scan-result"></div>
+        </div>
+      </div>
+
+      <!-- PAGE IMPORT/EXPORT -->
+      <div id="page-import" class="page">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:900px;">
+
+          <!-- IMPORT CSV -->
+          <div style="background:var(--anthracite); border-radius:12px; padding:24px;">
+            <h3 style="margin-bottom:16px;">📥 Importer des membres</h3>
+            <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:16px;">
+              Importez un fichier CSV depuis Excel.<br>
+              <strong style="color:var(--orange);">Format requis :</strong><br>
+              <code style="font-size:0.75rem; color:#aaa;">prenom;nom;email;telephone;role;annee_cotisation;montant;statut</code>
+            </p>
+            <div class="import-zone" onclick="document.getElementById('csv-input').click()">
+              <div style="font-size:2rem;">📂</div>
+              <div style="margin-top:8px;">Cliquer pour choisir un fichier CSV</div>
+              <div style="color:var(--text-light); font-size:0.8rem; margin-top:4px;">ou glisser-déposer ici</div>
+            </div>
+            <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="importCSV(event)">
+            <div id="import-result" style="margin-top:16px;"></div>
+
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--anthracite-light);">
+              <h4 style="margin-bottom:8px; font-size:0.9rem;">📋 Modèle CSV</h4>
+              <button class="btn btn-secondary btn-sm" onclick="downloadTemplate()">⬇️ Télécharger le modèle</button>
+            </div>
+          </div>
+
+          <!-- EXPORT -->
+          <div style="background:var(--anthracite); border-radius:12px; padding:24px;">
+            <h3 style="margin-bottom:16px;">📤 Exporter les données</h3>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <button class="btn btn-success" onclick="exportCSV()">📊 Exporter CSV (Excel)</button>
+              <button class="btn btn-secondary" onclick="exportJSON()">💾 Exporter JSON (sauvegarde)</button>
+              <button class="btn btn-secondary" onclick="importJSON()">📂 Restaurer depuis JSON</button>
+              <input type="file" id="json-input" accept=".json" style="display:none" onchange="importJSONFile(event)">
+            </div>
+
+            <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--anthracite-light);">
+              <h4 style="margin-bottom:8px; color:var(--danger); font-size:0.9rem;">⚠️ Zone de danger</h4>
+              <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑️ Effacer toutes les données</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL MEMBRE -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">➕ Nouveau membre</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Prénom *</label>
+        <input type="text" id="f-prenom" placeholder="Jean">
+      </div>
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" id="f-nom" placeholder="DUPONT">
+      </div>
+      <div class="form-group full">
+        <label>Email</label>
+        <input type="email" id="f-email" placeholder="jean.dupont@email.com">
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="tel" id="f-tel" placeholder="06 00 00 00 00">
+      </div>
+      <div class="form-group">
+        <label>Rôle</label>
+        <select id="f-role">
+          <option value="simple">Membre simple</option>
+          <option value="benevole">Bénévole</option>
+          <option value="bureau">Bureau</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Année de cotisation</label>
+        <input type="number" id="f-annee" value="2025" min="2020" max="2035">
+      </div>
+      <div class="form-group">
+        <label>Montant cotisation (€)</label>
+        <input type="number" id="f-montant" placeholder="20" min="0" step="0.5">
+      </div>
+      <div class="form-group">
+        <label>Statut paiement</label>
+        <select id="f-statut">
+          <option value="actif">✅ Payée</option>
+          <option value="expire">❌ Non payée / Expirée</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <input type="text" id="f-notes" placeholder="Informations complémentaires...">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMembre()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CONSTANTES =====
+const MDP = 'LeLoup@03320';
+let membres = [];
+let editingId = null;
+let scannerStream = null;
+let scannerInterval = null;
+let carteQRInstance = null;
+
+// ===== AUTH =====
+function login() {
+  const val = document.getElementById('mdp-input').value;
+  if (val === MDP) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadData();
+    updateDashboard();
+    updateTopbarDate();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    setTimeout(() => document.getElementById('login-error').style.display = 'none', 3000);
+  }
+}
+
+function logout() {
+  if (confirm('Se déconnecter ?')) {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('mdp-input').value = '';
+    stopScanner();
+  }
+}
+
+// ===== NAVIGATION =====
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = ['dashboard', 'membres', 'cartes', 'scanner', 'import'];
+  const idx = pages.indexOf(name);
+  if (idx >= 0) navItems[idx].classList.add('active');
+
+  const titles = {
+    dashboard: 'Dashboard',
+    membres: 'Gestion des membres',
+    cartes: 'Cartes membres',
+    scanner: 'Scanner QR Code',
+    import: 'Import / Export'
+  };
+  document.getElementById('page-title').textContent = titles[name] || name;
+
+  if (name === 'dashboard') updateDashboard();
+  if (name === 'membres') renderTable();
+  if (name !== 'scanner') stopScanner();
+}
+
+function updateTopbarDate() {
+  const d = new Date();
+  document.getElementById('topbar-date').textContent = d.toLocaleDateString('fr-FR', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+}
+
+// ===== STORAGE =====
+function saveData() {
+  localStorage.setItem('taniere_membres', JSON.stringify(membres));
+}
+
+function loadData() {
+  const d = localStorage.getItem('taniere_membres');
+  membres = d ? JSON.parse(d) : [];
+}
+
+function getNextId() {
+  if (membres.length === 0) return 1;
+  return Math.max(...membres.map(m => m.id || 0)) + 1;
+}
+
+function getNumero(id) {
+  return String(id).padStart(4, '0');
+}
+
+// ===== DASHBOARD =====
+function updateDashboard() {
+  const total = membres.length;
+  const actifs = membres.filter(m => m.statut === 'actif').length;
+  const expires = membres.filter(m => m.statut !== 'actif').length;
+  const bureau = membres.filter(m => m.role === 'bureau').length;
+  const montant = membres.filter(m => m.statut === 'actif').reduce((s, m) => s + (parseFloat(m.montant) || 0), 0);
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-actifs').textContent = actifs;
+  document.getElementById('stat-expires').textContent = expires;
+  document.getElementById('stat-bureau').textContent = bureau;
+  document.getElementById('stat-montant').textContent = montant.toFixed(2) + ' €';
+
+  const tbody = document.getElementById('dashboard-table');
+  const last5 = [...membres].reverse().slice(0, 5);
+  tbody.innerHTML = last5.map(m => `
+    <tr>
+      <td style="color:var(--orange)">N°${getNumero(m.id)}</td>
+      <td>${m.prenom} ${m.nom.toUpperCase()}</td>
+      <td>${badgeRole(m.role)}</td>
+      <td>${m.montant ? m.montant + ' €' : '-'}</td>
+      <td>${badgeStatut(m.statut)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">Aucun membre</td></tr>';
+}
+
+// ===== BADGES =====
+function badgeRole(role) {
+  const map = {
+    bureau: '<span class="badge badge-bureau">Bureau</span>',
+    benevole: '<span class="badge badge-benevole">Bénévole</span>',
+    simple: '<span class="badge badge-simple">Membre</span>'
+  };
+  return map[role] || map.simple;
+}
+
+function badgeStatut(statut) {
+  if (statut === 'actif') return '<span class="badge badge-actif">✅ Valide</span>';
+  return '<span class="badge badge-expire">❌ Expirée</span>';
+}
+
+// ===== TABLE MEMBRES =====
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const filterRole = document.getElementById('filter-role').value;
+  const filterStatut = document.getElementById('filter-statut').value;
+
+  let filtered = membres.filter(m => {
+    const txt = `${m.prenom} ${m.nom} ${m.email} ${m.tel}`.toLowerCase();
+    const matchSearch = !search || txt.includes(search);
+    const matchRole = !filterRole || m.role === filterRole;
+    const matchStatut = !filterStatut || m.statut === filterStatut;
+    return matchSearch && matchRole && matchStatut;
+  });
+
+  const tbody = document.getElementById('membres-table');
+  tbody.innerHTML = filtered.map(m => `
+    <tr>
+      <td style="color:var(--orange); font-weight:bold;">N°${getNumero(m.id)}</td>
+      <td>${m.prenom} ${m.nom.toUpperCase()}</td>
+      <td style="color:var(--text-light)">${m.email || '-'}</td>
+      <td style="color:var(--text-light)">${m.tel || '-'}</td>
+      <td>${badgeRole(m.role)}</td>
+      <td>${m.montant ? m.montant + ' €' : '-'} <small style="color:var(--text-light)">(${m.annee || '-'})</small></td>
+      <td>${badgeStatut(m.statut)}</td>
+      <td>
+        <div class="flex gap-8">
+          <button class="btn btn-secondary btn-sm" onclick="showCarte(${m.id})">🃏</button>
+          <button class="btn btn-secondary btn-sm" onclick="editMembre(${m.id})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMembre(${m.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:32px">Aucun membre trouvé</td></tr>';
+
+  document.getElementById('table-info').textContent = `${filtered.length} membre(s) affiché(s) sur ${membres.length}`;
+}
+
+// ===== MODAL =====
+function openModal(id = null) {
+  editingId = id;
+  document.getElementById('modal-title').textContent = id ? '✏️ Modifier le membre' : '➕ Nouveau membre';
+
+  if (id) {
+    const m = membres.find(x => x.id === id);
+    document.getElementById('f-prenom').value = m.prenom || '';
+    document.getElementById('f-nom').value = m.nom || '';
+    document.getElementById('f-email').value = m.email || '';
+    document.getElementById('f-tel').value = m.tel || '';
+    document.getElementById('f-role').value = m.role || 'simple';
+    document.getElementById('f-annee').value = m.annee || 2025;
+    document.getElementById('f-montant').value = m.montant || '';
+    document.getElementById('f-statut').value = m.statut || 'actif';
+    document.getElementById('f-notes').value = m.notes || '';
+  } else {
+    document.getElementById('f-prenom').value = '';
+    document.getElementById('f-nom').value = '';
+    document.getElementById('f-email').value = '';
+    document.getElementById('f-tel').value = '';
+    document.getElementById('f-role').value = 'simple';
+    document.getElementById('f-annee').value = new Date().getFullYear();
+    document.getElementById('f-montant').value = '';
+    document.getElementById('f-statut').value = 'actif';
+    document.getElementById('f-notes').value = '';
+  }
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('f-prenom').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function saveMembre() {
+  const prenom = document.getElementById('f-prenom').value.trim();
+  const nom = document.getElementById('f-nom').value.trim();
+  if (!prenom || !nom) { alert('Prénom et Nom sont obligatoires'); return; }
+
+  const data = {
+    prenom,
+    nom,
+    email: document.getElementById('f-email').value.trim(),
+    tel: document.getElementById('f-tel').value.trim(),
+    role: document.getElementById('f-role').value,
+    annee: parseInt(document.getElementById('f-annee').value),
+    montant: parseFloat(document.getElementById('f-montant').value) || 0,
+    statut: document.getElementById('f-statut').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    dateAjout: new Date().toISOString()
+  };
+
+  if (editingId) {
+    const idx = membres.findIndex(m => m.id === editingId);
+    membres[idx] = { ...membres[idx], ...data };
+  } else {
+    data.id = getNextId();
+    membres.push(data);
+  }
+
+  saveData();
+  closeModal();
+  renderTable();
+  updateDashboard();
+}
+
+function editMembre(id) {
+  openModal(id);
+}
+
+function deleteMembre(id) {
+  const m = membres.find(x => x.id === id);
+  if (confirm(`Supprimer ${m.prenom} ${m.nom} ?`)) {
+    membres = membres.filter(x => x.id !== id);
+    saveData();
+    renderTable();
+    updateDashboard();
+  }
+}
+
+// ===== CARTES =====
+function renderCarteSearch() {
+  const search = document.getElementById('carte-search').value.toLowerCase();
+  const results = document.getElementById('carte-search-results');
+  document.getElementById('carte-display').style.display = 'none';
+
+  if (!search) { results.innerHTML = ''; return; }
+
+  const found = membres.filter(m =>
+    `${m.prenom} ${m.nom} ${getNumero(m.id)}`.toLowerCase().includes(search)
+  ).slice(0, 8);
+
+  if (!found.length) {
+    results.innerHTML = '<p style="color:var(--text-light)">Aucun membre trouvé.</p>';
+    return;
+  }
+
+  results.innerHTML = `
+    <div style="background:var(--anthracite); border-radius:12px; overflow:hidden; max-width:500px; margin-bottom:20px;">
+      ${found.map(m => `
+        <div onclick="showCarte(${m.id})" style="padding:12px 16px; cursor:pointer; border-bottom:1px solid var(--anthracite-light); display:flex; align-items:center; justify-content:space-between; transition:background 0.15s;" onmouseover="this.style.background='rgba(255,107,0,0.1)'" onmouseout="this.style.background='transparent'">
+          <div>
+            <strong>${m.prenom} ${m.nom.toUpperCase()}</strong>
+            <small style="color:var(--text-light); margin-left:8px">N°${getNumero(m.id)}</small>
+          </div>
+          ${badgeRole(m.role)}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function showCarte(id) {
+  const m = membres.find(x => x.id === id);
+  if (!m) return;
+
+  // Si on vient depuis la page membres, naviguer vers cartes
+  showPage('cartes');
+  document.getElementById('carte-search').value = `${m.prenom} ${m.nom}`;
+  document.getElementById('carte-search-results').innerHTML = '';
+
+  document.getElementById('carte-nom').textContent = `${m.prenom} ${m.nom.toUpperCase()}`;
+  document.getElementById('carte-numero').textContent = `N° ${getNumero(m.id)}`;
+  document.getElementById('carte-annee-affich').textContent = `Cotisation ${m.annee || new Date().getFullYear()}`;
+
+  const roleLabels = { bureau: 'Bureau', benevole: 'Bénévole', simple: 'Membre' };
+  document.getElementById('carte-role-affich').textContent = roleLabels[m.role] || 'Membre';
+
+  // QR Code
+  const qrContainer = document.getElementById('carte-qr-code');
+  qrContainer.innerHTML = '';
+  const qrData = JSON.stringify({ id: m.id, prenom: m.prenom, nom: m.nom, annee: m.annee });
+  new QRCode(qrContainer, { text: qrData, width: 80, height: 80, colorDark: '#000', colorLight: '#fff' });
+
+  document.getElementById('carte-display').style.display = 'flex';
+}
+
+function printCarte() {
+  const carte = document.getElementById('carte-visuelle').outerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <!DOCTYPE html><html><head><title>Carte membre</title>
+    <style>
+      body { margin: 20px; background: #1A1A1A; display:flex; justify-content:center; }
+      :root { --orange:#FF6B00; --anthracite:#2C2C2C; --anthracite-light:#3D3D3D; --white:#fff; --text-light:#888; --orange-dark:#CC5500; }
+      .carte-membre { width:380px; background:linear-gradient(135deg,#2C2C2C,#3D3D3D); border-radius:16px; padding:24px; border:2px solid #FF6B00; box-shadow:0 8px 32px rgba(255,107,0,0.3); position:relative; overflow:hidden; }
+      .carte-membre::before { content:''; position:absolute; top:-50%; right:-20%; width:200px; height:200px; background:rgba(255,107,0,0.1); border-radius:50%; }
+      .carte-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+      .carte-header img { width:50px; }
+      .carte-header-text h3 { color:#FF6B00; font-size:1rem; font-family:sans-serif; }
+      .carte-header-text p { color:#888; font-size:0.75rem; font-family:sans-serif; }
+      .carte-body { display:flex; justify-content:space-between; align-items:flex-end; }
+      .carte-info h2 { font-size:1.3rem; color:#fff; margin-bottom:8px; font-family:sans-serif; }
+      .carte-num { font-size:0.8rem; color:#FF6B00; font-weight:600; margin-bottom:4px; font-family:sans-serif; }
+      .carte-annee { font-size:0.75rem; color:#888; font-family:sans-serif; }
+      .carte-role { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; background:rgba(255,107,0,0.2); color:#FF6B00; margin-top:8px; font-family:sans-serif; }
+      .carte-qr { background:white; padding:6px; border-radius:8px; }
+    </style></head>
+    <body>${carte}</body></html>
+  `);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+
+// ===== SCANNER =====
+async function startScanner() {
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    document.getElementById('scanner-video').srcObject = scannerStream;
+
+    // Utilisation de BarcodeDetector si disponible
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const video = document.getElementById('scanner-video');
+      scannerInterval = setInterval(async () => {
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length > 0) {
+            processQRCode(codes[0].rawValue);
+          }
+        } catch(e) {}
+      }, 500);
+    } else {
+      document.getElementById('scan-result').style.display = 'block';
+      document.getElementById('scan-result').className = 'scan-ko';
+      document.getElementById('scan-result').innerHTML = '⚠️ BarcodeDetector non supporté sur ce navigateur. Utilisez Chrome sur Android/Desktop.';
+    }
+  } catch(e) {
+    alert('Impossible d\'accéder à la caméra : ' + e.message);
+  }
+}
+
+function stopScanner() {
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
+  if (scannerInterval) {
+    clearInterval(scannerInterval);
+    scannerInterval = null;
+  }
+  document.getElementById('scanner-video').srcObject = null;
+}
+
+function processQRCode(raw) {
+  stopScanner();
+  try {
+    const data = JSON.parse(raw);
+    const membre = membres.find(m => m.id === data.id);
+    const result = document.getElementById('scan-result');
+    result.style.display = 'block';
+
+    if (membre) {
+      const ok = membre.statut === 'actif';
+      result.className = ok ? 'scan-ok' : 'scan-ko';
+      result.innerHTML = `
+        <div style="font-size:3rem; margin-bottom:12px">${ok ? '✅' : '⚠️'}</div>
+        <h2 style="color:${ok ? 'var(--success)' : 'var(--warning)'}; margin-bottom:8px">
+          ${membre.prenom} ${membre.nom.toUpperCase()}
+        </h2>
+        <p>N° ${getNumero(membre.id)} — ${ok ? 'Cotisation valide ' + membre.annee : 'Cotisation expirée ou non payée'}</p>
+        <p style="color:var(--text-light); margin-top:8px">${membre.role === 'bureau' ? '👑 Membre du bureau' : membre.role === 'benevole' ? '🙋 Bénévole' : '👤 Membre'}</p>
+        <button class="btn btn-secondary" style="margin-top:16px" onclick="document.getElementById('scan-result').style.display='none'; startScanner()">🔄 Scanner à nouveau</button>
+      `;
+    } else {
+      result.className = 'scan-ko';
+      result.innerHTML = `
+        <div style="font-size:3rem; margin-bottom:12px">❌</div>
+        <h2 style="color:var(--danger)">Membre non trouvé</h2>
+        <p style="color:var(--text-light)">Ce QR code ne correspond à aucun membre enregistré.</p>
+        <button class="btn btn-secondary" style="margin-top:16px" onclick="document.getElementById('scan-result').style.display='none'; startScanner()">🔄 Scanner à nouveau</button>
+      `;
+    }
+  } catch(e) {
+    const result = document.getElementById('scan-result');
+    result.style.display = 'block';
+    result.className = 'scan-ko';
+    result.innerHTML = '❌ QR Code non reconnu';
+  }
+}
+
+// ===== IMPORT CSV =====
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l => l.trim());
+    let added = 0, errors = 0;
+
+    // Détecter séparateur
+    const sep = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/"/g, ''));
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(sep).map(v => v.trim().replace(/"/g, ''));
+      if (values.length < 2) continue;
+
+      const row = {};
+      headers.forEach((h, idx) => row[h] = values[idx] || '');
+
+      const prenom = row['prenom'] || row['prénom'] || '';
+      const nom = row['nom'] || '';
+      if (!prenom || !nom) { errors++; continue; }
+
+      const data = {
+        id: getNextId(),
+        prenom: prenom.trim(),
+        nom: nom.trim(),
+        email: (row['email'] || '').trim(),
+        tel: (row['telephone'] || row['téléphone'] || row['tel'] || '').trim(),
+        role: (row['role'] || row['rôle'] || 'simple').trim(),
+        annee: parseInt(row['annee_cotisation'] || row['annee'] || row['année'] || new Date().getFullYear()),
+        montant: parseFloat(row['montant'] || 0) || 0,
+        statut: (row['statut'] || 'actif').trim(),
+        notes: (row['notes'] || '').trim(),
+        dateAjout: new Date().toISOString()
+      };
+
+      membres.push(data);
+      added++;
+    }
+
+    saveData();
+    renderTable();
+    updateDashboard();
+
+    const res = document.getElementById('import-result');
+    res.innerHTML = `<div style="background:rgba(76,175,80,0.2); border:1px solid var(--success); border-radius:8px; padding:16px; margin-top:8px;">
+      ✅ Import terminé : <strong>${added} membres ajoutés</strong>${errors ? `, ${errors} ligne(s) ignorée(s)` : ''}
+    </div>`;
+
+    event.target.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function downloadTemplate() {
+  const csv = 'prenom;nom;email;telephone;role;annee_cotisation;montant;statut\nJean;DUPONT;jean@email.com;0600000000;simple;2025;20;actif\nMarie;MARTIN;marie@email.com;0611111111;bureau;2025;0;actif';
+  downloadFile('modele_import.csv', csv, 'text/csv');
+}
+
+// ===== EXPORT =====
+function exportCSV() {
+  const headers = ['id', 'prenom', 'nom', 'email', 'tel', 'role', 'annee', 'montant', 'statut', 'notes'];
+  const rows = membres.map(m => headers.map(h => `"${(m[h] || '').toString().replace(/"/g, '')}"`).join(';'));
+  const csv = [headers.join(';'), ...rows].join('\n');
+  downloadFile(`taniere_membres_${new Date().toISOString().slice(0,10)}.csv`, csv, 'text/csv');
+}
+
+function exportJSON() {
+  downloadFile(`taniere_backup_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(membres, null, 2), 'application/json');
+}
+
+function importJSON() {
+  document.getElementById('json-input').click();
+}
+
+function importJSONFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Format invalide');
+      if (confirm(`Restaurer ${data.length} membres ? Les données actuelles seront remplacées.`)) {
+        membres = data;
+        saveData();
+        renderTable();
+        updateDashboard();
+        alert('✅ Restauration effectuée avec succès !');
+      }
+    } catch(err) {
+      alert('❌ Fichier JSON invalide : ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function clearAll() {
+  if (confirm('⚠️ Effacer TOUTES les données ? Cette action est irréversible !')) {
+    if (confirm('Vraiment supprimer tous les membres ?')) {
+      membres = [];
+      saveData();
+      renderTable();
+      updateDashboard();
+      alert('Données effacées.');
+    }
+  }
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob(['\ufeff' + content], { type: type + ';charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ===== INIT =====
+updateTopbarDate();
+</script>
+</body>
+</html>
