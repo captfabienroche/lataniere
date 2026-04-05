@@ -222,10 +222,8 @@ tr:hover td { background:#fffaf5; }
   font-family:Arial,sans-serif;
 }
 .card-green { background:linear-gradient(135deg,#1a7a3c,#2ecc71); }
-.card-blue { background:linear-gradient(135deg,#1a3a7a,#3498db); }
-.card-purple { background:linear-gradient(135deg,#5a1a7a,#9b59b6); }
 .card-expired { background:linear-gradient(135deg,#555,#888); }
-.member-card .card-logo { width:80px; opacity:0.9; }
+.member-card .card-logo { width:80px; opacity:0.95; }
 .member-card .card-assoc { font-size:12px; letter-spacing:1px; opacity:0.7; margin-top:2px; }
 .member-card .card-name { font-size:20px; font-weight:bold; margin-top:16px; }
 .member-card .card-num { font-size:12px; opacity:0.8; margin-top:2px; }
@@ -247,13 +245,38 @@ tr:hover td { background:#fffaf5; }
   width:180px; height:180px; border-radius:50%;
   background:rgba(255,255,255,0.05);
 }
-.card-status {
-  display:inline-block;
-  margin-top:6px;
-  padding:4px 8px;
-  font-size:12px;
-  border-radius:6px;
-  font-weight:bold;
+.card-type {
+  position: absolute;
+  top: 25px;
+  right: -45px;
+  transform: rotate(45deg);
+
+  width: 160px;
+  height: 20px;
+
+  line-height: 20px; /* 🔥 centrage vertical parfait */
+  text-align: center;
+
+  font-size: 10px;
+  font-weight: bold;
+
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.card-type.simple {
+  background:#999;
+  color:#fff;
+}
+
+.card-type.benevole {
+  background:#17a2b8;
+  color:#fff;
+}
+
+.card-type.bureau {
+  background:#e07b00;
+  color:#fff;
 }
 
 .status-active {
@@ -529,6 +552,14 @@ tr:hover td { background:#fffaf5; }
       <label>Notes</label>
       <textarea id="fNotes" placeholder="Remarques..."></textarea>
     </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="fType">
+        <option value="simple">Simple</option>
+        <option value="benevole">Bénévole</option>
+        <option value="bureau">Bureau</option>
+      </select>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
       <button class="btn btn-primary" onclick="saveMember()">Enregistrer</button>
@@ -640,11 +671,23 @@ function showMemberCard(id){
 
       <div class="member-card ${getCardClass(m.date)}">
 
+      <div class="card-type ${m.type || 'simple'}">
+        ${(m.type || 'simple').toUpperCase()}
+      </div>
+
         <div class="card-header">
-          <div class="card-assoc">LA TANIÈRE</div>
-          <div class="card-status-badge ${getStatusClass(m.date)}">
-            ${getStatusLabel(m.date)}
+
+          <!-- 🔥 BANDEAU TYPE -->
+          <div class="card-type ${m.type || 'simple'}">
+            ${(m.type || 'simple').toUpperCase()}
           </div>
+
+          <!-- 🔥 LOGO + TITRE -->
+          <div style="display:flex; align-items:center; gap:10px;">
+            <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
+            <div class="card-assoc">LA TANIÈRE</div>
+          </div>
+
         </div>
 
         <div class="card-name">${m.prenom} ${m.nom}</div>
@@ -729,16 +772,12 @@ function getStatusBadge(dateStr) {
   const year = dateStr ? new Date(dateStr).getFullYear() : '';
   if (s === 'active') return `<span class="badge badge-green">✓ Actif ${year}</span>`;
   if (s === 'next') return `<span class="badge badge-blue">✓ Actif ${year}</span>`;
-  if (s === 'recent') return `<span class="badge badge-orange">⚠ Expiré ${year}</span>`;
-  return `<span class="badge badge-red">✗ Inactif</span>`;
+   return `<span class="badge badge-red">✗ Inactif</span>`;
 }
 
 function getCardClass(dateStr) {
   const s = getMemberStatus(dateStr);
-  if (s === 'active') return 'card-green';
-  if (s === 'next') return 'card-blue';
-  if (s === 'recent') return 'card-purple';
-  return 'card-expired';
+  return (s === 'active' || s === 'next') ? 'card-green' : 'card-expired';
 }
 
 function nextNumero() {
@@ -857,6 +896,7 @@ function saveMember() {
     email: document.getElementById('fEmail').value.trim(),
     notes: document.getElementById('fNotes').value.trim(),
     cotisation: document.getElementById('fCotisation').value,
+    type: document.getElementById('fType')?.value || 'simple',
   };
 
   if (editingId) {
@@ -902,11 +942,23 @@ function renderCards() {
     div.innerHTML = `
       <div class="member-card ${getCardClass(m.date)}">
 
+      <div class="card-type ${m.type || 'simple'}">
+        ${(m.type || 'simple').toUpperCase()}
+      </div>
+
         <div class="card-header">
-          <div class="card-assoc">LA TANIÈRE</div>
-          <div class="card-status-badge ${getStatusClass(m.date)}">
-            ${getStatusLabel(m.date)}
+
+          <!-- 🔥 BANDEAU TYPE -->
+          <div class="card-type ${m.type || 'simple'}">
+            ${(m.type || 'simple').toUpperCase()}
           </div>
+
+          <!-- 🔥 LOGO + TITRE -->
+          <div style="display:flex; align-items:center; gap:10px;">
+            <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
+            <div class="card-assoc">LA TANIÈRE</div>
+          </div>
+
         </div>
 
         <div class="card-name">${m.prenom} ${m.nom}</div>
