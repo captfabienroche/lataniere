@@ -6,7 +6,8 @@
 <title>La Tanière - Gestion des membres</title>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>-->
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: Arial, sans-serif; background:#1a1a1a; color:#333; }
@@ -94,6 +95,13 @@ nav h1 { color:#e07b00; font-size:18px; flex:1; margin-left:12px; }
 .stat-card .number { font-size:36px; font-weight:bold; color:#e07b00; }
 .stat-card .label { color:#666; font-size:13px; margin-top:4px; }
 
+.qr-wrapper {
+  background:#fff;
+  padding:10px;
+  border-radius:10px;
+  display:inline-block;
+}
+
 /* TABLE */
 .table-wrap { background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
 .table-header { padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #eee; }
@@ -123,6 +131,48 @@ tr:hover td { background:#fffaf5; }
 .badge-orange { background:#fff3cd; color:#856404; }
 .badge-red { background:#f8d7da; color:#721c24; }
 .badge-grey { background:#e2e3e5; color:#383d41; }
+
+/* VIDEO BOX */
+.scan-container {
+  max-width: 500px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.scan-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+#video {
+  width: 100%;
+  border-radius: 10px;
+  background: #000;
+}
+
+.scan-result {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.scan-ok {
+  background: #d4edda;
+  color: #155724;
+}
+
+.scan-expired {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.scan-unknown {
+  background: #f8d7da;
+  color: #721c24;
+}
 
 /* BOUTONS */
 .btn {
@@ -161,23 +211,33 @@ tr:hover td { background:#fffaf5; }
 
 /* CARTE MEMBRE */
 .member-card {
-  width:340px; border-radius:14px; padding:20px;
-  color:#fff; position:relative; overflow:hidden;
-  box-shadow:0 8px 24px rgba(0,0,0,0.2);
+  position: relative;
+  border-radius: 16px;
+  padding: 18px;
+  background: linear-gradient(135deg, #1f1f1f, #2b2b2b);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  overflow: hidden;
+  width:340px; 
   font-family:Arial,sans-serif;
 }
 .card-green { background:linear-gradient(135deg,#1a7a3c,#2ecc71); }
 .card-blue { background:linear-gradient(135deg,#1a3a7a,#3498db); }
 .card-purple { background:linear-gradient(135deg,#5a1a7a,#9b59b6); }
 .card-expired { background:linear-gradient(135deg,#555,#888); }
-.member-card .card-logo { width:50px; opacity:0.9; }
-.member-card .card-assoc { font-size:11px; opacity:0.8; margin-top:2px; }
+.member-card .card-logo { width:80px; opacity:0.9; }
+.member-card .card-assoc { font-size:12px; letter-spacing:1px; opacity:0.7; margin-top:2px; }
 .member-card .card-name { font-size:20px; font-weight:bold; margin-top:16px; }
 .member-card .card-num { font-size:12px; opacity:0.8; margin-top:2px; }
 .member-card .card-bottom { display:flex; justify-content:space-between; align-items:flex-end; margin-top:16px; }
 .member-card .card-info { font-size:11px; opacity:0.85; }
 .member-card canvas { border-radius:6px; background:#fff; padding:4px; }
-.card-pattern {
+/* HEADER */
+.card-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}.card-pattern {
   position:absolute; top:-30px; right:-30px;
   width:150px; height:150px; border-radius:50%;
   background:rgba(255,255,255,0.07);
@@ -187,10 +247,33 @@ tr:hover td { background:#fffaf5; }
   width:180px; height:180px; border-radius:50%;
   background:rgba(255,255,255,0.05);
 }
+.card-status {
+  display:inline-block;
+  margin-top:6px;
+  padding:4px 8px;
+  font-size:12px;
+  border-radius:6px;
+  font-weight:bold;
+}
+
+.status-active {
+  background:#d4edda;
+  color:#155724;
+}
+
+.status-next {
+  background:#d1ecf1;
+  color:#0c5460;
+}
+
+.status-expired {
+  background:#f8d7da;
+  color:#721c24;
+}
 
 /* SCANNER */
-#scannerVideo { width:100%; border-radius:8px; max-height:300px; object-fit:cover; }
-#scannerCanvas { display:none; }
+#video { width:100%; border-radius:8px; max-height:300px; object-fit:cover; }
+#canvas { display:none; }
 .scan-result {
   padding:20px; border-radius:10px; margin-top:16px;
   text-align:center; font-size:16px; font-weight:bold;
@@ -200,13 +283,31 @@ tr:hover td { background:#fffaf5; }
 .scan-expired { background:#fff3cd; color:#856404; border:2px solid #ffc107; }
 
 /* IMPORT */
-.drop-zone {
-  border:3px dashed #e07b00; border-radius:10px;
-  padding:40px; text-align:center; color:#999;
-  cursor:pointer; transition:all 0.2s; background:#fff;
+.import-container {
+  max-width: 600px;
+  margin: 40px auto;
 }
-.drop-zone:hover { background:#fffaf5; color:#e07b00; }
-.drop-zone input { display:none; }
+
+.drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drop-zone:hover {
+  border-color: #e07b00;
+  background: #fff7f0;
+}
+
+.drop-zone.dragover {
+  border-color: #e07b00 !important;
+  background: #fff7f0;
+  transform: scale(1.02);
+}
 
 /* CARDS GRID */
 .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:20px; }
@@ -338,17 +439,21 @@ tr:hover td { background:#fffaf5; }
 
   <!-- SCANNER -->
   <div class="page" id="page-scanner">
-    <div style="max-width:500px; margin:0 auto;">
-      <div class="table-wrap" style="padding:20px;">
-        <h3 style="margin-bottom:16px; color:#e07b00;">📷 Scanner une carte membre</h3>
-        <video id="scannerVideo" autoplay playsinline></video>
-        <canvas id="scannerCanvas"></canvas>
-        <div style="margin-top:12px; display:flex; gap:10px;">
-          <button class="btn btn-primary" id="startScanBtn" onclick="startScanner()">▶ Démarrer le scan</button>
-          <button class="btn btn-secondary" id="stopScanBtn" onclick="stopScanner()" style="display:none">⏹ Arrêter</button>
-        </div>
-        <div id="scanResult"></div>
+    <div class="scan-container">
+
+      <div class="scan-box">
+        <h2 style="margin-bottom:15px">Scanner un membre</h2>
+
+        <video id="video" autoplay></video>
+        <canvas id="canvas" hidden></canvas>
+
+        <div id="scanResult" class="scan-result" style="display:none"></div>
+
+        <button class="btn btn-primary" style="margin-top:15px" onclick="startScanner()">
+          Démarrer le scan
+        </button>
       </div>
+
     </div>
   </div>
 
@@ -360,11 +465,15 @@ tr:hover td { background:#fffaf5; }
         <p style="color:#666; font-size:13px; margin-bottom:20px;">
           Format attendu : <strong>prénom, nom, numéro adhérent, date adhésion, téléphone, email, notes</strong>
         </p>
-        <label class="drop-zone" for="csvFile">
-          <div style="font-size:40px;">📂</div>
-          <div style="margin-top:10px; font-size:15px;">Cliquez ou glissez votre fichier CSV ici</div>
-          <input type="file" id="csvFile" accept=".csv" onchange="importCSV(this)">
-        </label>
+          <div id="dropZone" class="drop-zone">
+            <div style="font-size:40px;">📂</div>
+            <div style="margin-top:10px; font-size:15px;">
+              Glissez votre fichier CSV ici
+            </div>
+            <small style="color:#888;">ou cliquez pour sélectionner</small>
+
+            <input type="file" id="csvFile" accept=".csv" hidden>
+          </div>
         <div id="importResult" style="margin-top:16px;"></div>
       </div>
       <div class="table-wrap" style="padding:24px; margin-top:20px;">
@@ -432,9 +541,6 @@ const USERS = [
   { user: 'bureau', pass: 'taniere2026' }
 ];
 
-const CURRENT_YEAR = new Date().getFullYear();
-const NEXT_YEAR = CURRENT_YEAR + 1;
-
 // ==================== LOGIN ====================
 function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
@@ -464,6 +570,33 @@ function togglePassword(){
   lucide.createIcons();
 }
 
+function drawQR(id, elementId, size = 80){
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  el.innerHTML = "";
+
+  const url = window.location.origin + window.location.pathname + "?member=" + id;
+
+  new QRCode(el, {
+    text: url,
+    width: size,
+    height: size
+  });
+}
+
+function checkQRAccess(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("member");
+
+  if(!id) return;
+
+  const member = members.find(m => m.id === id);
+  if(!member) return;
+
+  showMemberCard(id);
+}
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     if (document.getElementById('loginScreen').style.display !== 'none' ||
@@ -479,6 +612,22 @@ function doLogout() {
   stopScanner();
 }
 
+function getStatusLabel(date){
+  const status = getMemberStatus(date);
+
+  if(status === 'active') return "ACTIF";
+  if(status === 'next') return "VALIDE (année suivante)";
+  return "EXPIRE";
+}
+
+function getStatusClass(date){
+  const status = getMemberStatus(date);
+
+  if(status === 'active') return "status-active";
+  if(status === 'next') return "status-next";
+  return "status-expired";
+}
+
 function showMemberCard(id){
   const m = members.find(x=>x.id===id);
   if(!m) return;
@@ -490,22 +639,30 @@ function showMemberCard(id){
     <div class="modal" style="background:transparent;box-shadow:none;padding:0;text-align:center">
 
       <div class="member-card ${getCardClass(m.date)}">
-        <div class="card-pattern"></div>
-        <div class="card-pattern2"></div>
 
-        <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
+        <div class="card-header">
+          <div class="card-assoc">LA TANIÈRE</div>
+          <div class="card-status-badge ${getStatusClass(m.date)}">
+            ${getStatusLabel(m.date)}
+          </div>
+        </div>
 
-        <div class="card-assoc">LA TANIÈRE</div>
         <div class="card-name">${m.prenom} ${m.nom}</div>
         <div class="card-num">N° ${m.numero}</div>
+
+        <div class="card-divider"></div>
 
         <div class="card-bottom">
           <div class="card-info">
             ${m.date ? `Adhésion : ${new Date(m.date).toLocaleDateString('fr-FR')}<br>` : ''}
             ${m.cotisation ? `Cotisation : ${m.cotisation} €` : ''}
           </div>
-          <canvas id="qr-view" width="80" height="80"></canvas>
+
+          <div class="qr-wrapper">
+            <div id="qr-${m.id}"></div>
+          </div>
         </div>
+
       </div>
 
       <div style="margin-top:15px">
@@ -517,18 +674,10 @@ function showMemberCard(id){
 
   document.body.appendChild(modal);
 
-  // 🔥 QR FIX
-  setTimeout(() => {
-    const canvas = document.getElementById('qr-view');
-    if (canvas && typeof QRCode !== "undefined") {
-      QRCode.toCanvas(canvas, "ID:" + m.id, {
-        width: 80,
-        margin: 1
-      }, function (err) {
-        if (err) console.error(err);
-      });
-    }
-  }, 50);
+  requestAnimationFrame(() => {
+    drawQR(m.id, 'qr-view', 90);
+  });
+
 }
 
 // ==================== NAVIGATION ====================
@@ -558,11 +707,20 @@ function saveAll() {
 }
 
 function getMemberStatus(dateStr) {
-  if (!dateStr) return 'unknown';
-  const year = new Date(dateStr).getFullYear();
-  if (year === CURRENT_YEAR) return 'active';
-  if (year === NEXT_YEAR) return 'next';
-  if (year >= CURRENT_YEAR - 1) return 'recent';
+  if (!dateStr) return 'expired';
+
+  const d = new Date(dateStr);
+  const now = new Date();
+
+  const isLate = (d.getMonth() === 11 && d.getDate() >= 15);
+  let validUntilYear = d.getFullYear() + (isLate ? 1 : 0);
+
+  const end = new Date(validUntilYear, 11, 31, 23, 59, 59);
+
+  if (now <= end) {
+    return validUntilYear > now.getFullYear() ? 'next' : 'active';
+  }
+
   return 'expired';
 }
 
@@ -742,37 +900,41 @@ function renderCards() {
     const div = document.createElement('div');
 
     div.innerHTML = `
-      <div class="member-card ${getCardClass(m.date)}" id="card-${m.id}">
-        <div class="card-pattern"></div>
-        <div class="card-pattern2"></div>
-        <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
-        <div class="card-assoc">LA TANIÈRE</div>
+      <div class="member-card ${getCardClass(m.date)}">
+
+        <div class="card-header">
+          <div class="card-assoc">LA TANIÈRE</div>
+          <div class="card-status-badge ${getStatusClass(m.date)}">
+            ${getStatusLabel(m.date)}
+          </div>
+        </div>
+
         <div class="card-name">${m.prenom} ${m.nom}</div>
         <div class="card-num">N° ${m.numero}</div>
+
+        <div class="card-divider"></div>
+
         <div class="card-bottom">
           <div class="card-info">
             ${m.date ? `Adhésion : ${new Date(m.date).toLocaleDateString('fr-FR')}<br>` : ''}
-            ${m.email ? m.email : ''}
+            ${m.cotisation ? `Cotisation : ${m.cotisation} €` : ''}
           </div>
-          <canvas id="qr-${m.id}" width="70" height="70"></canvas>
+
+          <div class="qr-wrapper">
+            <div id="qr-${m.id}"></div>
+          </div>
         </div>
+
       </div>
     `;
 
     grid.appendChild(div);
 
-    // 🔥 QR FIX (IMPORTANT)
-    setTimeout(() => {
-      const canvas = document.getElementById('qr-' + m.id);
-      if (canvas && typeof QRCode !== "undefined") {
-        QRCode.toCanvas(canvas, "ID:" + m.id, {
-          width: 70,
-          margin: 1
-        }, function (err) {
-          if (err) console.error(err);
-        });
-      }
-    }, 50);
+    // 🔥 attendre que le DOM soit vraiment prêt
+    requestAnimationFrame(() => {
+      drawQR(m.id, 'qr-' + m.id, 70);
+    });
+
   });
 }
 
@@ -781,8 +943,8 @@ let scanStream = null;
 let scanInterval = null;
 
 function startScanner() {
-  const video = document.getElementById('scannerVideo');
-  const canvas = document.getElementById('scannerCanvas');
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(stream => {
       scanStream = stream;
@@ -810,38 +972,67 @@ function startScanner() {
 function stopScanner() {
   if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
   if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-  document.getElementById('scannerVideo').style.display = 'none';
+  document.getElementById('video').style.display = 'none';
   document.getElementById('startScanBtn').style.display = 'inline-block';
   document.getElementById('stopScanBtn').style.display = 'none';
 }
 
 function handleScanResult(data) {
-  let info;
-  try { info = JSON.parse(data); } catch(e) { info = null; }
 
   const resultDiv = document.getElementById('scanResult');
-  if (!info || !info.num) {
-    resultDiv.innerHTML = `<div class="scan-result scan-unknown">❓ QR Code non reconnu</div>`;
+
+  let member = null;
+  let scannedId = null;
+  let scannedNum = null;
+
+  // 🔥 NOUVEAU FORMAT
+  if (data.startsWith("ID:")) {
+    scannedId = data.replace("ID:", "");
+    member = members.find(m => m.id === scannedId);
+  }
+
+  // 🔁 ANCIEN FORMAT
+  else {
+    try {
+      const info = JSON.parse(data);
+      scannedNum = info.num;
+      scannedId = info.id;
+      member = members.find(m => m.numero === scannedNum || m.id === scannedId);
+    } catch (e) {}
+  }
+
+  // ❌ NON RECONNU
+  if (!member) {
+    resultDiv.style.display = "block"; // 🔥 ICI
+    resultDiv.innerHTML = `
+      <div class="scan-result scan-unknown">
+        ❌ Membre INCONNU<br>
+        <small>${scannedId ? "ID: "+scannedId : scannedNum ? "N° "+scannedNum : ""}</small>
+      </div>`;
     return;
   }
 
-  const member = members.find(m => m.numero === info.num || m.id === info.id);
-  if (!member) {
-    resultDiv.innerHTML = `<div class="scan-result scan-unknown">❌ Membre INCONNU<br><small>N° ${info.num}</small></div>`;
-    return;
-  }
+  window.addEventListener('DOMContentLoaded', () => {
+  checkQRAccess();
+  });
 
   const status = getMemberStatus(member.date);
   const year = member.date ? new Date(member.date).getFullYear() : '';
 
+  // ✅ ACTIF
   if (status === 'active' || status === 'next') {
+    resultDiv.style.display = "block"; // 🔥 ICI
     resultDiv.innerHTML = `
       <div class="scan-result scan-ok">
         ✅ MEMBRE ACTIF ${year}<br>
         <span style="font-size:20px">${member.prenom} ${member.nom}</span><br>
         <small>N° ${member.numero}</small>
       </div>`;
-  } else {
+  }
+
+  // ⚠️ EXPIRÉ
+  else {
+    resultDiv.style.display = "block"; // 🔥 ICI
     resultDiv.innerHTML = `
       <div class="scan-result scan-expired">
         ⚠️ COTISATION EXPIRÉE (${year})<br>
@@ -855,38 +1046,105 @@ function handleScanResult(data) {
 function importCSV(input) {
   const file = input.files[0];
   if (!file) return;
+
   const reader = new FileReader();
+
   reader.onload = e => {
     const lines = e.target.result.split('\n').filter(l => l.trim());
+
     let added = 0, skipped = 0;
+
     lines.forEach((line, i) => {
       const cols = line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g,''));
+
       if (cols.length < 2) { skipped++; return; }
-      const [prenom, nom, numero, date, tel, email, notes] = cols;
-      if (!prenom || !nom) { skipped++; return; }
-      // Skip header
+
+      const [prenom, nom, numero, date, tel, email, cotisation, notes] = cols;
+
+      // skip header
       if (i === 0 && (prenom.toLowerCase().includes('prenom') || prenom.toLowerCase().includes('prénom'))) return;
+
+      if (!prenom || !nom) { skipped++; return; }
+
       const exists = members.find(m => m.numero === numero && numero);
       if (exists) { skipped++; return; }
+
       members.push({
         id: 'id_' + Date.now() + '_' + i,
-        prenom, nom,
+        prenom,
+        nom,
         numero: numero || nextNumero(),
         date: parseDate(date),
         tel: tel || '',
         email: email || '',
+        cotisation: cotisation || '',
         notes: notes || ''
       });
+
       added++;
     });
+
     saveAll();
     renderDashboard();
     renderMembers();
+    renderCards();
+
     document.getElementById('importResult').innerHTML = `
-      <div class="scan-result scan-ok">✅ ${added} membre(s) importé(s), ${skipped} ignoré(s)</div>`;
-    input.value = '';
+      <div class="scan-result scan-ok">
+        ✅ ${added} membre(s) importé(s)<br>
+        <small>${skipped} ignoré(s)</small>
+      </div>`;
+
+    fileInput.value = '';
   };
+
   reader.readAsText(file, 'UTF-8');
+}
+
+function handleFile(file){
+  if(!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+    const content = e.target.result;
+
+    if(file.name.endsWith('.json')){
+      try{
+        const data = JSON.parse(content);
+        members = data;
+        saveAll();
+        renderMembers();
+        renderCards();
+        alert("Import JSON réussi");
+      }catch{
+        alert("Erreur JSON");
+      }
+    }
+
+    if(file.name.endsWith('.csv')){
+      // simple CSV (tu peux améliorer après)
+      const lines = content.split('\n');
+      lines.slice(1).forEach(line=>{
+        const [prenom, nom, numero] = line.split(',');
+        if(prenom) {
+          members.push({
+            id: 'id_'+Date.now()+Math.random(),
+            prenom,
+            nom,
+            numero
+          });
+        }
+      });
+
+      saveAll();
+      renderMembers();
+      renderCards();
+      alert("Import CSV réussi");
+    }
+  };
+
+  reader.readAsText(file);
 }
 
 function parseDate(str) {
@@ -925,8 +1183,42 @@ document.getElementById('memberModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-lucide.createIcons();
+window.addEventListener('DOMContentLoaded', () => {
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('csvFile');
+
+  if (!dropZone || !fileInput) return;
+
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    importCSV({ files: e.dataTransfer.files });
+  });
+
+  fileInput.addEventListener('change', () => {
+    importCSV(fileInput);
+  });
+
+});
+
+  window.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+
 
 </script>
+
 </body>
 </html>
