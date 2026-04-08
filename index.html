@@ -96,11 +96,35 @@ nav h1 { color:#e07b00; font-size:18px; flex:1; margin-left:12px; }
 .stat-card .label { color:#666; font-size:13px; margin-top:4px; }
 
 .qr-wrapper {
+  width:120px;
+  height:120px;
+  padding:6px;
   background:#fff;
-  padding:10px;
   border-radius:10px;
-  display:inline-block;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
+.qr-wrapper > div {
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.qr-wrapper > div canvas,
+.qr-wrapper > div img {
+  width:100% !important;
+  height:100% !important;
+}
+/*
+.qr-wrapper img,
+.qr-wrapper canvas {
+  width:100% !important;
+  height:100% !important;
+} 
+*/
 
 /* TABLE */
 .table-wrap { background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
@@ -229,7 +253,6 @@ tr:hover td { background:#fffaf5; }
 .member-card .card-num { font-size:12px; opacity:0.8; margin-top:2px; }
 .member-card .card-bottom { display:flex; justify-content:space-between; align-items:flex-end; margin-top:16px; }
 .member-card .card-info { font-size:11px; opacity:0.85; }
-.member-card canvas { border-radius:6px; background:#fff; padding:4px; }
 /* HEADER */
 .card-header {
   display:flex;
@@ -445,7 +468,16 @@ tr:hover td { background:#fffaf5; }
       </div>
       <table>
         <thead><tr>
-          <th>N°</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Adhésion</th><th>Statut</th><th>Actions</th>
+          <th>N°</th>
+          <th>Prénom</th>
+          <th>Nom</th>
+          <th>Type</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Adhésion</th>
+          <th>Cotisation</th>
+          <th>Statut</th>
+          <th>Actions</th>
         </tr></thead>
         <tbody id="membersTable"></tbody>
       </table>
@@ -486,7 +518,8 @@ tr:hover td { background:#fffaf5; }
       <div class="table-wrap" style="padding:24px;">
         <h3 style="margin-bottom:8px; color:#e07b00;">📥 Import CSV</h3>
         <p style="color:#666; font-size:13px; margin-bottom:20px;">
-          Format attendu : <strong>prénom, nom, numéro adhérent, date adhésion, téléphone, email, notes</strong>
+          Format attendu :
+          <strong>prénom, nom, numéro, type, date, cotisation, téléphone, email, notes</strong>
         </p>
           <div id="dropZone" class="drop-zone">
             <div style="font-size:40px;">📂</div>
@@ -555,9 +588,9 @@ tr:hover td { background:#fffaf5; }
     <div class="form-group">
       <label>Type</label>
       <select id="fType">
-        <option value="simple">Simple</option>
-        <option value="benevole">Bénévole</option>
-        <option value="bureau">Bureau</option>
+        <option value="Adhérent">Adhérent</option>
+        <option value="Bénévole">Bénévole</option>
+        <option value="Bureau">Bureau</option>
       </select>
     </div>
     <div class="modal-actions">
@@ -601,8 +634,7 @@ function togglePassword(){
   lucide.createIcons();
 }
 
-function drawQR(id, elementId, size = 80){
-  const el = document.getElementById(elementId);
+function drawQRToElement(id, el, size = 80){
   if (!el) return;
 
   el.innerHTML = "";
@@ -612,7 +644,8 @@ function drawQR(id, elementId, size = 80){
   new QRCode(el, {
     text: url,
     width: size,
-    height: size
+    height: size,
+    correctLevel: QRCode.CorrectLevel.M
   });
 }
 
@@ -660,67 +693,40 @@ function getStatusClass(date){
 }
 
 function showMemberCard(id){
-  const m = members.find(x=>x.id===id);
-  if(!m) return;
+  const m = members.find(x => x.id === id);
+  if (!m) return;
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay open';
 
   modal.innerHTML = `
-    <div class="modal" style="background:transparent;box-shadow:none;padding:0;text-align:center">
+    <div class="modal" style="
+      background:transparent;
+      box-shadow:none;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:20px;
+    ">
 
-      <div class="member-card ${getCardClass(m.date)}">
+      ${renderMemberCardHTML(m)}
 
-      <div class="card-type ${m.type || 'simple'}">
-        ${(m.type || 'simple').toUpperCase()}
-      </div>
-
-        <div class="card-header">
-
-          <!-- 🔥 BANDEAU TYPE -->
-          <div class="card-type ${m.type || 'simple'}">
-            ${(m.type || 'simple').toUpperCase()}
-          </div>
-
-          <!-- 🔥 LOGO + TITRE -->
-          <div style="display:flex; align-items:center; gap:10px;">
-            <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
-            <div class="card-assoc">LA TANIÈRE</div>
-          </div>
-
-        </div>
-
-        <div class="card-name">${m.prenom} ${m.nom}</div>
-        <div class="card-num">N° ${m.numero}</div>
-
-        <div class="card-divider"></div>
-
-        <div class="card-bottom">
-          <div class="card-info">
-            ${m.date ? `Adhésion : ${new Date(m.date).toLocaleDateString('fr-FR')}<br>` : ''}
-            ${m.cotisation ? `Cotisation : ${m.cotisation} €` : ''}
-          </div>
-
-          <div class="qr-wrapper">
-            <div id="qr-${m.id}"></div>
-          </div>
-        </div>
-
-      </div>
-
-      <div style="margin-top:15px">
-        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Fermer</button>
-      </div>
+      <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+        Fermer
+      </button>
 
     </div>
   `;
 
   document.body.appendChild(modal);
 
+  // 🔥 IMPORTANT : attendre que le DOM soit VRAIMENT prêt
   requestAnimationFrame(() => {
-    drawQR(m.id, 'qr-view', 90);
+    const el = modal.querySelector('#qr-' + m.id);
+    drawQRToElement(m.id, el, 120);
   });
-
 }
 
 // ==================== NAVIGATION ====================
@@ -828,19 +834,14 @@ function renderMembers() {
       <td>${m.numero}</td>
       <td>${m.prenom}</td>
       <td>${m.nom}</td>
+      <td>${m.type || '-'}</td>
       <td>${m.email || '-'}</td>
       <td>${m.tel || '-'}</td>
       <td>${m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '-'}</td>
-      
-      <!-- 🔥 NOUVELLE COLONNE COTISATION -->
-      <td>${m.cotisation ? m.cotisation + ' €' : '-'}</td>
-
+      <td>${m.cotisation !== '' && m.cotisation !== undefined ? m.cotisation + ' €' : '-'}</td>
       <td>${getStatusBadge(m.date)}</td>
-
       <td>
-        <!-- 🔥 BOUTON CARTE -->
         <button class="btn btn-success btn-sm" onclick="showMemberCard('${m.id}')">Carte</button>
-
         <button class="btn btn-primary btn-sm" onclick="openEditModal('${m.id}')">✏</button>
         <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑</button>
       </td>
@@ -921,11 +922,21 @@ function deleteMember(id) {
   renderDashboard();
 }
 
+function normalizeMembers(){
+  members = members.map(m => ({
+    ...m,
+    cotisation: m.cotisation || '',
+    type: m.type || 'simple'
+  }));
+  saveAll();
+}
+
 // ==================== CARTES ====================
 function renderCards() {
   const search = (document.getElementById('cardSearch')?.value || '').toLowerCase();
+
   const filtered = members.filter(m =>
-    (m.prenom+m.nom+m.numero).toLowerCase().includes(search)
+    (m.prenom + m.nom + m.numero).toLowerCase().includes(search)
   );
 
   const grid = document.getElementById('cardsGrid');
@@ -938,56 +949,54 @@ function renderCards() {
 
   filtered.forEach(m => {
     const div = document.createElement('div');
-
-    div.innerHTML = `
-      <div class="member-card ${getCardClass(m.date)}">
-
-      <div class="card-type ${m.type || 'simple'}">
-        ${(m.type || 'simple').toUpperCase()}
-      </div>
-
-        <div class="card-header">
-
-          <!-- 🔥 BANDEAU TYPE -->
-          <div class="card-type ${m.type || 'simple'}">
-            ${(m.type || 'simple').toUpperCase()}
-          </div>
-
-          <!-- 🔥 LOGO + TITRE -->
-          <div style="display:flex; align-items:center; gap:10px;">
-            <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
-            <div class="card-assoc">LA TANIÈRE</div>
-          </div>
-
-        </div>
-
-        <div class="card-name">${m.prenom} ${m.nom}</div>
-        <div class="card-num">N° ${m.numero}</div>
-
-        <div class="card-divider"></div>
-
-        <div class="card-bottom">
-          <div class="card-info">
-            ${m.date ? `Adhésion : ${new Date(m.date).toLocaleDateString('fr-FR')}<br>` : ''}
-            ${m.cotisation ? `Cotisation : ${m.cotisation} €` : ''}
-          </div>
-
-          <div class="qr-wrapper">
-            <div id="qr-${m.id}"></div>
-          </div>
-        </div>
-
-      </div>
-    `;
+    div.innerHTML = renderMemberCardHTML(m);
 
     grid.appendChild(div);
 
-    // 🔥 attendre que le DOM soit vraiment prêt
     requestAnimationFrame(() => {
-      drawQR(m.id, 'qr-' + m.id, 70);
+      const el = div.querySelector('#qr-' + m.id);
+      drawQRToElement(m.id, el, 70);
     });
-
   });
+}
+
+function renderMemberCardHTML(m, qrSize = 70) {
+  return `
+    <div class="member-card ${getCardClass(m.date)}">
+
+      <div class="card-header">
+
+        <div class="card-type ${m.type || 'simple'}">
+          ${(m.type || 'simple').toUpperCase()}
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="./logo.png" class="card-logo" onerror="this.style.display='none'">
+          <div class="card-assoc">LA TANIÈRE</div>
+        </div>
+
+      </div>
+
+      <div class="card-name">${m.prenom} ${m.nom}</div>
+      <div class="card-num">N° ${m.numero}</div>
+
+      <div class="card-divider"></div>
+
+      <div class="card-bottom">
+        <div class="card-info">
+          ${m.date ? `Adhésion : ${new Date(m.date).toLocaleDateString('fr-FR')}<br>` : ''}
+          ${m.cotisation !== undefined && m.cotisation !== '' 
+            ? `Cotisation : ${m.cotisation} €` 
+            : ''}
+        </div>
+
+        <div class="qr-wrapper">
+          <div id="qr-${m.id}"></div>
+        </div>
+      </div>
+
+    </div>
+  `;
 }
 
 // ==================== SCANNER ====================
@@ -1064,10 +1073,6 @@ function handleScanResult(data) {
     return;
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-  checkQRAccess();
-  });
-
   const status = getMemberStatus(member.date);
   const year = member.date ? new Date(member.date).getFullYear() : '';
 
@@ -1111,7 +1116,7 @@ function importCSV(input) {
 
       if (cols.length < 2) { skipped++; return; }
 
-      const [prenom, nom, numero, date, tel, email, cotisation, notes] = cols;
+      const [prenom, nom, numero, type, date, cotisation, tel, email, notes] = cols;
 
       // skip header
       if (i === 0 && (prenom.toLowerCase().includes('prenom') || prenom.toLowerCase().includes('prénom'))) return;
@@ -1123,13 +1128,13 @@ function importCSV(input) {
 
       members.push({
         id: 'id_' + Date.now() + '_' + i,
-        prenom,
-        nom,
+        prenom, nom,
         numero: numero || nextNumero(),
+        type: type || 'simple',
         date: parseDate(date),
+        cotisation: cotisation !== '' ? Number(cotisation) : '',
         tel: tel || '',
         email: email || '',
-        cotisation: cotisation || '',
         notes: notes || ''
       });
 
@@ -1211,8 +1216,18 @@ function parseDate(str) {
 
 // ==================== EXPORT ====================
 function exportCSV() {
-  const rows = [['Prénom','Nom','N° Adhérent','Date adhésion','Téléphone','Email','Cotisation','Notes']];
-  members.forEach(m => rows.push([m.prenom,m.nom,m.numero,m.date,m.tel,m.email,m.cotisation,m.notes]));
+  const rows = [['Prénom','Nom','Numéro','Type','Date adhésion','Cotisation','Téléphone','Email','Notes']];
+  members.forEach(m => rows.push([
+    m.prenom,
+    m.nom,
+    m.numero,
+    m.type,
+    m.date,
+    m.cotisation,
+    m.tel,
+    m.email,
+    m.notes
+  ]));
   const csv = rows.map(r => r.join(';')).join('\n');
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
@@ -1240,34 +1255,35 @@ window.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('csvFile');
 
-  if (!dropZone || !fileInput) return;
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
 
-  dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
 
-  dropZone.addEventListener('dragover', e => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
 
-  dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-  });
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      importCSV({ files: e.dataTransfer.files });
+    });
 
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    importCSV({ files: e.dataTransfer.files });
-  });
+    fileInput.addEventListener('change', () => {
+      importCSV(fileInput);
+    });
+  }
 
-  fileInput.addEventListener('change', () => {
-    importCSV(fileInput);
-  });
+  // 🔥 toujours exécuté
+  lucide.createIcons();
+  checkQRAccess();
+  normalizeMembers();
 
 });
-
-  window.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons();
-  });
 
 
 </script>
