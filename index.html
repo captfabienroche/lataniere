@@ -505,11 +505,9 @@ tr:hover td { background:#fffaf5; }
 
       <div class="scan-box">
         <h2 style="margin-bottom:15px">Scanner un membre</h2>
-
-        <!-- BOUTONS SOIRÉE -->
+            <!-- BOUTONS SOIRÉE -->
         <div style="margin-bottom:15px; display:flex; gap:10px; justify-content:center;">
-          <button class="btn btn-success" onclick="startEvent()">▶️ Démarrer soirée</button>
-          <button class="btn btn-danger" onclick="endEvent()">⏹ Fin soirée</button>
+          <button id="eventToggleBtn" class="btn btn-success" onclick="toggleEvent()">🟢 Démarrer soirée</button>
         </div>
 
         <div id="eventStatus" style="margin-bottom:15px; font-weight:bold; text-align:center;"></div>
@@ -528,8 +526,8 @@ tr:hover td { background:#fffaf5; }
           padding:10px;
           font-size:13px;
         "></div>
-        <button id="startScanBtn" class="btn btn-primary" onclick="startScanner()">
-          Démarrer le scan
+        <button id="scanToggleBtn" class="btn btn-primary" onclick="toggleScanner()">
+          ▶️ Démarrer le scan
         </button>
 
         <button id="stopScanBtn" class="btn btn-danger" style="display:none" onclick="stopScanner()">
@@ -714,8 +712,10 @@ function logScan(member){
   });
 
   // compteur
-  document.getElementById('eventStatus').textContent =
-    "🟢 Soirée en cours (" + currentEvent.attendees.length + " présents)";
+  document.getElementById('eventStatus').innerHTML =
+    `<span style="color:#28a745;font-weight:bold">
+      ● Soirée en cours (${currentEvent.attendees.length})
+    </span>`;
 
   // 👇 AJOUT LISTE LIVE
   renderLiveList();
@@ -729,7 +729,13 @@ function startEvent(name){
     attendees: []
   };
 
-  document.getElementById('eventStatus').textContent = "🟢 Soirée en cours";
+  document.getElementById('eventStatus').innerHTML =
+    `<span style="color:#28a745;font-weight:bold">
+      ● Soirée en cours (0)
+    </span>`;
+
+  updateEventUI();
+  updateStatusBar()
 }
 
 async function endEvent(){
@@ -785,6 +791,18 @@ async function endEvent(){
   document.getElementById('eventStatus').textContent = "";
 
   stopScanner(); // 🔥 important
+
+  updateEventUI();
+  updateStatusBar()
+}
+
+function updateStatusBar(){
+
+  const el = document.getElementById('scannerStatus');
+  if (!el) return;
+
+  // 🔥 on vide complètement
+  el.innerHTML = "";
 }
 
 function renderLiveList(){
@@ -1079,6 +1097,32 @@ function closeModal() {
   document.getElementById('memberModal').classList.remove('open');
 }
 
+function toggleScanner(){
+
+  if (scanInterval) {
+    stopScanner();
+  } else {
+    startScanner();
+  }
+
+  updateScannerUI();
+}
+
+function updateScannerUI(){
+
+  const btn = document.getElementById('scanToggleBtn');
+
+  if (scanInterval) {
+    btn.textContent = "⏹ Arrêter le scan";
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-danger');
+  } else {
+    btn.textContent = "▶️ Démarrer le scan";
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+  }
+}
+
 function saveMember() {
 
   const prenom = document.getElementById('fPrenom').value.trim();
@@ -1258,6 +1302,8 @@ function startScanner() {
 
     })
     .catch(() => alert("Caméra refusée"));
+
+    updateScannerUI();
 }
 
 function stopScanner() {
@@ -1273,6 +1319,34 @@ function stopScanner() {
   }
 
   document.getElementById('video').style.display = 'none';
+
+  updateScannerUI();
+}
+
+function toggleEvent(){
+
+  if (currentEvent) {
+    endEvent();
+  } else {
+    startEvent();
+  }
+
+  updateEventUI();
+}
+
+function updateEventUI(){
+
+  const btn = document.getElementById('eventToggleBtn');
+
+  if (currentEvent) {
+    btn.textContent = "⏹ Fin soirée";
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-danger');
+  } else {
+    btn.textContent = "🟢 Démarrer soirée";
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-success');
+  }
 }
 
 let alreadyScanned = false;
@@ -1337,40 +1411,34 @@ function handleScanResult(data) {
   // ===== SON + VIBRATION
   try {
 
-    let soundUrl;
+    let soundUrl = "";
+    let label = "";
 
     if (already) {
-      soundUrl = "https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg";
+      soundUrl = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg";
+      label = "DEJA SCANNE";
       if (navigator.vibrate) navigator.vibrate([100,50,100]);
     }
 
     else if (status !== 'active' && status !== 'next') {
-      soundUrl = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg";
+      soundUrl = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg?x=1";
+      label = "EXPIRE";
       if (navigator.vibrate) navigator.vibrate(300);
     }
 
     else {
       soundUrl = "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg";
+      label = "OK";
       if (navigator.vibrate) navigator.vibrate(50);
     }
 
-    const audio = new Audio(soundUrl);
+    console.log("SOUND:", label);
+
+    const audio = new Audio(soundUrl + "&t=" + Date.now()); // 🔥 anti cache
+    audio.volume = 1;
     audio.play();
 
   } catch(e){}
-
-  // ===== DÉJÀ SCANNÉ
-  if (already) {
-    resultDiv.style.display = "block";
-    resultDiv.innerHTML = `
-      <div class="scan-result scan-expired">
-        ⚠️ Déjà scanné<br>
-        <small>${member.prenom} ${member.nom}</small>
-      </div>`;
-
-    setTimeout(() => { alreadyScanned = false; }, 1200);
-    return;
-  }
 
   // ===== ENREGISTREMENT
   logScan(member);
@@ -1403,22 +1471,25 @@ function beep(){
 
 // ==================== IMPORT CSV ====================
 function importCSV(input) {
+
   const file = input.files[0];
   if (!file) return;
 
   const reader = new FileReader();
 
   reader.onload = e => {
+
     const lines = e.target.result.split('\n').filter(l => l.trim());
 
     let added = 0, skipped = 0;
 
     lines.forEach((line, i) => {
+
       const cols = line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g,''));
 
       if (cols.length < 2) { skipped++; return; }
 
-      const [prenom, nom, numero, type, date, cotisation, tel, email, notes] = cols;
+      const [prenom, nom, numero, typeRaw, date, cotisationRaw, tel, email, notes] = cols;
 
       // skip header
       if (i === 0 && (prenom.toLowerCase().includes('prenom') || prenom.toLowerCase().includes('prénom'))) return;
@@ -1428,13 +1499,31 @@ function importCSV(input) {
       const exists = members.find(m => m.numero === numero && numero);
       if (exists) { skipped++; return; }
 
+      // 🔥 TYPE MAPPING PROPRE
+      let type = 'simple';
+
+      if (typeRaw) {
+        const t = typeRaw.toLowerCase();
+
+        if (t.includes('bénévole') || t.includes('benevole')) type = 'benevole';
+        else if (t.includes('bureau')) type = 'bureau';
+      }
+
+      // 🔥 COTISATION SAFE
+      let cotisation = '';
+      if (cotisationRaw !== undefined && cotisationRaw !== '') {
+        const n = Number(cotisationRaw.replace(',', '.'));
+        cotisation = isNaN(n) ? cotisationRaw : n;
+      }
+
       members.push({
         id: 'id_' + Date.now() + '_' + i,
-        prenom, nom,
+        prenom,
+        nom,
         numero: numero || nextNumero(),
-        type: type || 'simple',
+        type,
         date: parseDate(date),
-        cotisation: cotisation !== '' ? Number(cotisation) : '',
+        cotisation,
         tel: tel || '',
         email: email || '',
         notes: notes || ''
