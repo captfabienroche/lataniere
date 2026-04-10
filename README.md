@@ -1,13 +1,23 @@
-# La Tanière
+=== LA TANIERE - GUIDE RAPIDE ===
 
-A simple static web starter project.
+1. Installer Node.js (si pas déjà fait)
+https://nodejs.org/
 
-## Files
+2. Ouvrir ce dossier
 
-- `index.html` — main page
-- `styles.css` — visual styling
-- `script.js` — small interactive example
+3. Créer un fichier ".env"
+   (copier le fichier ".env.example" et renommer en ".env")
 
-## Usage
+4. Remplir :
+   EMAIL_USER=...
+   EMAIL_PASS=...
 
-Open `index.html` in your browser.
+5. Double-cliquer sur :
+   ▶ start-server.bat
+
+6. Ouvrir le site (index.html)
+
+7. Les emails fonctionneront automatiquement
+
+IMPORTANT :
+Ne pas fermer la fenêtre noire pendant l'utilisation
