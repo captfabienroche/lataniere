@@ -776,18 +776,36 @@ async function endEvent(){
     }
 
   } catch(e) {
-    // 🔥 CANCEL → on ignore MAIS on continue le reset
     console.log("Export annulé");
   }
 
-  // 🔥 TOUJOURS RESET
+  // ====================
+  // 🔥 RESET COMPLET
+  // ====================
+
   currentEvent = null;
-  document.getElementById('eventStatus').textContent = "";
 
-  stopScanner(); // 🔥 important
+  // stop scanner propre
+  stopScanner();
 
+  // reset UI statut
+  const status = document.getElementById('eventStatus');
+  if (status) status.textContent = '⚪ Pas de soirée';
+
+  // reset liste / tableau
+  const list = document.getElementById('eventList');
+  if (list) list.innerHTML = '';
+
+  const table = document.getElementById('eventTable');
+  if (table) table.innerHTML = '';
+
+  // reset éventuel résultat scan
+  const result = document.getElementById('scanResult');
+  if (result) result.innerHTML = '';
+
+  // UI globale
   updateEventUI();
-  updateStatusBar()
+  updateStatusBar();
 }
 
 function updateStatusBar(){
