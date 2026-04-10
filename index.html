@@ -515,7 +515,6 @@ tr:hover td { background:#fffaf5; }
         <!-- CAMERA -->
         <video id="video" autoplay style="display:none;"></video>       
         <canvas id="canvas" hidden></canvas>
-
         <div id="scanResult" class="scan-result" style="display:none"></div>
         <div id="liveList" style="
           margin-top:15px;
@@ -529,11 +528,6 @@ tr:hover td { background:#fffaf5; }
         <button id="scanToggleBtn" class="btn btn-primary" onclick="toggleScanner()">
           ▶️ Démarrer le scan
         </button>
-
-        <button id="stopScanBtn" class="btn btn-danger" style="display:none" onclick="stopScanner()">
-          Stop
-        </button>
-
       </div>
     </div>
   </div>
@@ -1113,11 +1107,11 @@ function updateScannerUI(){
   const btn = document.getElementById('scanToggleBtn');
 
   if (scanInterval) {
-    btn.textContent = "⏹ Arrêter le scan";
+    btn.innerHTML = "■ Stop scan";
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-danger');
   } else {
-    btn.textContent = "▶️ Démarrer le scan";
+    btn.innerHTML = "► Démarrer le scan";
     btn.classList.remove('btn-danger');
     btn.classList.add('btn-primary');
   }
@@ -1269,8 +1263,11 @@ function startScanner() {
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
 
-  // 🔥 évite double lancement
-  if (scanInterval) return;
+  // 🔥 si déjà actif → stop propre
+  if (scanInterval) {
+    stopScanner();
+    return;
+  }
 
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(stream => {
@@ -1283,7 +1280,7 @@ function startScanner() {
 
       scanInterval = setInterval(() => {
 
-        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        if (!video.videoWidth || !video.videoHeight) return;
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -1293,34 +1290,38 @@ function startScanner() {
         const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(img.data, img.width, img.height);
 
-        if (code) {
+        if (code && code.data) {
           console.log("QR DETECTED:", code.data);
           handleScanResult(code.data);
         }
 
-      }, 200); // 🔥 plus fluide
+      }, 200);
+
+      // 🔥 IMPORTANT : UI APRÈS activation
+      updateScannerUI();
 
     })
     .catch(() => alert("Caméra refusée"));
-
-    updateScannerUI();
 }
 
-function stopScanner() {
+function stopScanner(){
 
-  if (scanStream) {
-    scanStream.getTracks().forEach(t => t.stop());
-    scanStream = null;
-  }
+  const video = document.getElementById('video');
 
   if (scanInterval) {
     clearInterval(scanInterval);
     scanInterval = null;
   }
 
-  document.getElementById('video').style.display = 'none';
+  if (scanStream) {
+    scanStream.getTracks().forEach(track => track.stop());
+    scanStream = null;
+  }
 
-  updateScannerUI();
+  video.srcObject = null;
+  video.style.display = 'none';
+
+  updateScannerUI(); // 🔥 IMPORTANT
 }
 
 function toggleEvent(){
@@ -1346,6 +1347,56 @@ function updateEventUI(){
     btn.textContent = "🟢 Démarrer soirée";
     btn.classList.remove('btn-danger');
     btn.classList.add('btn-success');
+  }
+}
+
+function playScanFeedback(type){
+
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const now = ctx.currentTime;
+
+  function play(freqStart, freqEnd, duration, typeOsc="sine", volume=0.4){
+
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+
+    o.connect(g);
+    g.connect(ctx.destination);
+
+    o.type = typeOsc;
+
+    o.frequency.setValueAtTime(freqStart, now);
+    o.frequency.exponentialRampToValueAtTime(freqEnd, now + duration);
+
+    g.gain.setValueAtTime(volume, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    o.start(now);
+    o.stop(now + duration);
+  }
+
+  if(type === 'duplicate'){
+    play(1400, 200, 0.3, "square");
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
+  }
+
+  else if(type === 'expired'){
+    // 🔥 DOUBLE PULSE PROPRE
+    play(200, 150, 0.4, "sawtooth", 0.6);
+    setTimeout(() => {
+      play(200, 150, 0.4, "sawtooth", 0.6);
+    }, 450);
+    if (navigator.vibrate) navigator.vibrate([300,120,300]);
+  }
+
+  else if(type === 'ok'){
+    play(600, 600, 0.08, "triangle", 0.2);
+    if (navigator.vibrate) navigator.vibrate(40);
+  }
+
+  else if(type === 'unknown'){
+    play(300, 150, 0.2, "sine", 0.3);
+    if (navigator.vibrate) navigator.vibrate([200,100,200]);
   }
 }
 
@@ -1386,62 +1437,52 @@ function handleScanResult(data) {
 
   // ===== NON RECONNU
   if (!member) {
+
+    playScanFeedback('unknown');
+
     resultDiv.style.display = "block";
     resultDiv.innerHTML = `
       <div class="scan-result scan-unknown">
         ❌ Membre INCONNU
       </div>`;
 
-    // vibration erreur
-    if (navigator.vibrate) navigator.vibrate([200,100,200]);
-
     setTimeout(() => { alreadyScanned = false; }, 800);
     return;
   }
 
-  // ===== DÉJÀ SCANNÉ (avec cooldown 5s)
-  const now = Date.now();
-  const already = currentEvent && currentEvent.attendees.find(a =>
-    a.id === member.id &&
-    (now - new Date(a.time).getTime() < 5000)
-  );
-
+  // ===== STATUS
   const status = getMemberStatus(member.date);
 
-  // ===== SON + VIBRATION
-  try {
+  // ===== DÉJÀ SCANNÉ (PRIORITAIRE)
+  const now = Date.now();
+  const already = currentEvent && currentEvent.attendees.some(a => 
+    a.id === member.id
+  );
 
-    let soundUrl = "";
-    let label = "";
+  if (already) {
 
-    if (already) {
-      soundUrl = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg";
-      label = "DEJA SCANNE";
-      if (navigator.vibrate) navigator.vibrate([100,50,100]);
-    }
+    playScanFeedback('duplicate');
 
-    else if (status !== 'active' && status !== 'next') {
-      soundUrl = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg?x=1";
-      label = "EXPIRE";
-      if (navigator.vibrate) navigator.vibrate(300);
-    }
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = `
+      <div class="scan-result scan-expired">
+        ⚠️ Déjà scanné<br>
+        <small>${member.prenom} ${member.nom}</small>
+      </div>`;
 
-    else {
-      soundUrl = "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg";
-      label = "OK";
-      if (navigator.vibrate) navigator.vibrate(50);
-    }
+    setTimeout(() => { alreadyScanned = false; }, 1200);
+    return; // 🔥 STOP TOTAL
+  }
 
-    console.log("SOUND:", label);
-
-    const audio = new Audio(soundUrl + "&t=" + Date.now()); // 🔥 anti cache
-    audio.volume = 1;
-    audio.play();
-
-  } catch(e){}
-
-  // ===== ENREGISTREMENT
+  // ===== ENREGISTREMENT (uniquement si pas duplicate)
   logScan(member);
+
+  // ===== SON
+  if (status === 'active' || status === 'next') {
+    playScanFeedback('ok');
+  } else {
+    playScanFeedback('expired');
+  }
 
   // ===== AFFICHAGE
   resultDiv.style.display = "block";
@@ -1462,11 +1503,6 @@ function handleScanResult(data) {
   setTimeout(() => {
     alreadyScanned = false;
   }, 800);
-}
-
-function beep(){
-  const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-  audio.play();
 }
 
 // ==================== IMPORT CSV ====================
