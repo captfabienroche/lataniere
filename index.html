@@ -7,6 +7,7 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>-->
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -127,7 +128,12 @@ nav h1 { color:#e07b00; font-size:18px; flex:1; margin-left:12px; }
 */
 
 /* TABLE */
-.table-wrap { background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.table-wrap {
+  background:#fff;
+  border-radius:10px;
+  overflow-x:auto;   /* 🔥 clé */
+  overflow-y:hidden;
+}
 .table-header { padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #eee; }
 .table-header h3 { flex:1; color:#333; }
 input[type=text], input[type=email], input[type=tel], input[type=date], select, textarea {
@@ -230,10 +236,17 @@ tr:hover td { background:#fffaf5; }
 }
 .modal-overlay.open { display:flex; }
 .modal {
-  background:#fff; border-radius:12px; padding:28px;
-  width:90%; max-width:520px; max-height:90vh; overflow-y:auto;
+  background:#fff;
+  border-radius:12px;
+  padding:28px;
+  width:95%;
+  max-width:1400px; /* 🔥 clé du fix */
+  max-height:90vh;
+  overflow-y:auto;
+  overflow-x: auto;
   box-shadow:0 10px 40px rgba(0,0,0,0.3);
 }
+
 .modal h3 { margin-bottom:20px; color:#e07b00; font-size:18px; }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
 .form-group { margin-bottom:12px; }
@@ -295,6 +308,13 @@ tr:hover td { background:#fffaf5; }
   letter-spacing: 1px;
 
   color: #fff;
+}
+
+/* conteneur principal */
+.card {
+  width: 95%;
+  max-width: 1400px;
+  margin: auto;
 }
 
 .card-type.simple {
@@ -372,6 +392,59 @@ tr:hover td { background:#fffaf5; }
   nav h1 { display:none; }
   .nav-btn { padding:10px 10px; font-size:12px; }
 }
+
+/* ===== FIX TABLE MEMBRES ===== */
+
+#membersTable {
+  table-layout: auto;
+  min-width: 900px;
+  width: 100%;
+}
+
+/* cellules générales */
+#membersTable td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Email */
+#membersTable td:nth-child(5) {
+  max-width: 180px;
+}
+
+/* Téléphone */
+#membersTable td:nth-child(6) {
+  max-width: 140px;
+}
+
+/* Statut */
+#membersTable td:nth-child(9) {
+  width: 130px;
+  white-space: nowrap;
+}
+
+/* 🔥 Actions */
+/* colonne actions */
+#membersTable td.actions {
+  width: 160px;
+  white-space: nowrap;
+}
+
+/* wrapper flex (SAFE) */
+.actions-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* boutons fixes */
+.actions-wrap button {
+  padding: 4px 6px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 </style>
 </head>
 <body>
@@ -783,27 +856,29 @@ async function endEvent(){
   // 🔥 RESET COMPLET
   // ====================
 
-  currentEvent = null;
-
-  // stop scanner propre
+  // stop scanner
   stopScanner();
 
-  // reset UI statut
+  // reset état
+  currentEvent = null;
+
+  // reset statut
   const status = document.getElementById('eventStatus');
   if (status) status.textContent = '⚪ Pas de soirée';
 
-  // reset liste / tableau
-  const list = document.getElementById('eventList');
-  if (list) list.innerHTML = '';
+  // reset liste live (IMPORTANT)
+  const live = document.getElementById('liveList');
+  if (live) live.innerHTML = '';
 
+  // reset autres éléments
   const table = document.getElementById('eventTable');
   if (table) table.innerHTML = '';
 
-  // reset éventuel résultat scan
   const result = document.getElementById('scanResult');
   if (result) result.innerHTML = '';
 
-  // UI globale
+  // forcer refresh UI
+  renderLiveList();
   updateEventUI();
   updateStatusBar();
 }
@@ -820,7 +895,13 @@ function updateStatusBar(){
 function renderLiveList(){
 
   const container = document.getElementById('liveList');
-  if(!container || !currentEvent) return;
+  if(!container) return;
+
+  // 🔥 si pas de soirée → on vide et on sort
+  if(!currentEvent){
+    container.innerHTML = '';
+    return;
+  }
 
   const list = [...currentEvent.attendees].reverse();
 
@@ -1030,8 +1111,8 @@ function renderDashboard() {
   document.getElementById('dashboardTable').innerHTML = recent.map(m => `
     <tr>
       <td>${m.numero}</td>
-      <td>${m.nom}</td>
       <td>${m.prenom}</td>
+      <td>${m.nom}</td>
       <td>${m.email || '-'}</td>
       <td>${m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '-'}</td>
       <td>${m.cotisation ? m.cotisation + ' €' : '-'}</td>
@@ -1058,20 +1139,82 @@ function renderMembers() {
         <td>${m.prenom}</td>
         <td>${m.nom}</td>
         <td>${getTypeLabel(m.type)}</td>
-        <td>${m.email || '-'}</td>
-        <td>${m.tel || '-'}</td>
+        <td title="${m.email || ''}">${m.email || '-'}</td>
+        <td title="${m.tel || ''}">${m.tel || '-'}</td>
         <td>${m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '-'}</td>
         <td>${m.cotisation !== '' && m.cotisation !== undefined ? m.cotisation + ' €' : '-'}</td>
         <td>${getStatusBadge(m.date)}</td>
-        <td>
-          <button class="btn btn-success btn-sm" onclick="showMemberCard('${m.id}')">Carte</button>
-          <button class="btn btn-primary btn-sm" onclick="openEditModal('${m.id}')">✏</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑</button>
+        <td class="actions">
+          <div class="actions-wrap">
+            <button class="btn btn-success btn-sm" title="Carte" onclick="showMemberCard('${m.id}')">🪪</button>
+            <button class="btn btn-primary btn-sm" title="Modifier" onclick="openEditModal('${m.id}')">✏</button>
+            <button class="btn btn-danger btn-sm" title="Supprimer" onclick="deleteMember('${m.id}')">🗑</button>
+            <button class="btn btn-secondary btn-sm" title="Envoyer email" onclick="sendMemberCard('${m.id}')">📧</button>
+          </div>
         </td>
       </tr>
     `;
 
-  }).join('') || '<tr><td colspan="9" style="text-align:center;color:#999;padding:30px">Aucun membre</td></tr>';
+  }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:30px">Aucun membre</td></tr>';
+}
+
+async function sendMemberCard(id){
+
+  const m = members.find(x => x.id === id);
+  if (!m || !m.email) {
+    alert("Email manquant");
+    return;
+  }
+
+  // créer carte
+  const temp = document.createElement('div');
+  temp.style.position = "fixed";
+  temp.style.left = "-9999px";
+  temp.innerHTML = renderMemberCardHTML(m);
+  document.body.appendChild(temp);
+
+  const card = temp.querySelector('.member-card');
+
+  await new Promise(r => requestAnimationFrame(r));
+
+  const qr = temp.querySelector('#qr-' + m.id);
+  drawQRToElement(m.id, qr, 120);
+
+  const canvas = await html2canvas(card, {
+    scale: 4,                 // 🔥 qualité x3
+    backgroundColor: null,
+    useCORS: true
+  });
+  const imageBase64 = canvas.toDataURL("image/png");
+
+  temp.remove();
+
+  // 🔥 ENVOI BACKEND
+  try {
+
+    const res = await fetch("http://localhost:3000/send-card", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: m.email,
+        prenom: m.prenom,
+        imageBase64
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('scanResult').innerHTML = "📧 Email envoyé ✔";
+    } else {
+      alert("Erreur envoi");
+    }
+
+  } catch(e){
+    alert("Serveur non disponible");
+  }
 }
 
 // ==================== MODAL ====================
