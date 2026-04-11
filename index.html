@@ -8,7 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: Arial, sans-serif; background:#1a1a1a; color:#333; }
@@ -648,30 +649,41 @@ tr:hover td { background:#fffaf5; }
   <!-- IMPORT -->
   <div class="page" id="page-import">
     <div style="max-width:600px; margin:0 auto;">
+
       <div class="table-wrap" style="padding:24px;">
         <h3 style="margin-bottom:8px; color:#e07b00;">📥 Import CSV</h3>
         <p style="color:#666; font-size:13px; margin-bottom:20px;">
           Format attendu :
           <strong>prénom, nom, numéro, type, date, cotisation, téléphone, email, notes</strong>
         </p>
-          <div id="dropZone" class="drop-zone">
-            <div style="font-size:40px;">📂</div>
-            <div style="margin-top:10px; font-size:15px;">
-              Glissez votre fichier CSV ici
-            </div>
-            <small style="color:#888;">ou cliquez pour sélectionner</small>
 
-            <input type="file" id="csvFile" accept=".csv" hidden>
+        <div id="dropZone" class="drop-zone">
+          <div style="font-size:40px;">📂</div>
+          <div style="margin-top:10px; font-size:15px;">
+            Glissez votre fichier Excel ici
           </div>
-        <div id="importResult" style="margin-top:16px;"></div>
+          <small style="color:#888;">ou cliquez pour sélectionner</small>
+
+          <input type="file" id="csvFile" accept=".xlsx, .xls" style="display:none;">
+        </div>
+
+        <!-- 🔥 FEEDBACK IMPORT (ICI) -->
+        <div id="importFeedback" style="
+          margin-top:15px;
+          text-align:center;
+          display:none;
+        "></div>
+
       </div>
+
       <div class="table-wrap" style="padding:24px; margin-top:20px;">
         <h3 style="margin-bottom:12px; color:#e07b00;">💾 Sauvegarde</h3>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn-success" onclick="exportCSV()">⬇ Exporter CSV</button>
+          <button class="btn btn-success" onclick="exportMembersExcel()">⬇ Exporter Excel</button>
           <button class="btn btn-danger" onclick="clearAllData()">🗑 Effacer toutes les données</button>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -721,9 +733,9 @@ tr:hover td { background:#fffaf5; }
     <div class="form-group">
       <label>Type</label>
       <select id="fType">
-        <option value="Adhérent">Adhérent</option>
-        <option value="Bénévole">Bénévole</option>
-        <option value="Bureau">Bureau</option>
+        <option value="simple">Adhérent</option>
+        <option value="benevole">Bénévole</option>
+        <option value="bureau">Bureau</option>
       </select>
     </div>
     <div class="modal-actions">
@@ -753,6 +765,12 @@ function doLogin() {
   } else {
     document.getElementById('loginError').style.display = 'block';
   }
+}
+
+function formatMemberNumber(num) {
+  const n = parseInt(num, 10);
+  if (isNaN(n)) return '0000';
+  return String(n).padStart(4, '0');
 }
 
 function togglePassword(){
@@ -802,11 +820,17 @@ function highlight() {
 
 function getTypeLabel(type){
 
-  if (type === 'simple') return 'Adhérent';
-  if (type === 'benevole') return 'Bénévole';
-  if (type === 'bureau') return 'Bureau';
+  if (!type) return '-';
 
-  return type || '-';
+  const labels = {
+    simple: 'Adhérent',
+    benevole: 'Bénévole',
+    bureau: 'Bureau'
+  };
+
+  const label = labels[type] || type;
+
+  return `<span class="badge badge-${type}">${label}</span>`;
 }
 
 function logScan(member){
@@ -816,7 +840,7 @@ function logScan(member){
   const exists = currentEvent.attendees.find(a => a.id === member.id);
   if(exists){
     document.getElementById('eventStatus').textContent =
-      "⚠️ Déjà scanné : " + member.prenom + " " + member.nom;
+      "⚠️ Déjà identifié : " + member.prenom + " " + member.nom;
     return;
   }
 
@@ -856,79 +880,108 @@ function startEvent(name){
   updateStatusBar()
 }
 
+function formatDateCompact(date) {
+  const d = new Date(date);
+
+  const year = String(d.getFullYear()).slice(-2);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+
+  return `${year}${month}${day} ${hours}${minutes}`;
+}
+
 async function endEvent(){
 
   if(!currentEvent) return;
 
-  const rows = [['Prénom','Nom','Numéro','Heure']];
+  // ===== DATA =====
+  const data = currentEvent.attendees.map(a => ({
+    "Prénom": a.prenom,
+    "Nom": a.nom,
+    "Numéro": formatMemberNumber(a.numero),
+    "Heure": formatDateCompact(a.time)
+  }));
 
-  currentEvent.attendees.forEach(a => {
-    rows.push([
-      a.prenom,
-      a.nom,
-      a.numero,
-      new Date(a.time).toLocaleString()
-    ]);
-  });
-
-  const csv = rows.map(r => r.join(';')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv'});
-
-  const filename = currentEvent.name.replace(/\s/g,'_') + '.csv';
+  // ===== NOM FICHIER =====
+  const now = new Date();
+  const filenameBase = "Passage_Soiree_" + formatDateCompact(now).replace(' ', '_');
 
   try {
 
-    if (window.showSaveFilePicker) {
+    // ===== EXCEL SI LIB DISPONIBLE =====
+    if (window.XLSX) {
 
-      const handle = await window.showSaveFilePicker({
-        suggestedName: filename,
-        types: [{
-          description: 'CSV',
-          accept: {'text/csv': ['.csv']}
-        }]
-      });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Participants");
 
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
+      const filename = filenameBase + '.xlsx';
+
+      XLSX.writeFile(wb, filename);
 
     } else {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
+
+      // ===== FALLBACK CSV =====
+      const rows = [['Prénom','Nom','Numéro','Heure']];
+
+      data.forEach(r => {
+        rows.push([r["Prénom"], r["Nom"], r["Numéro"], r["Heure"]]);
+      });
+
+      const csv = rows.map(r => r.join(';')).join('\n');
+      const blob = new Blob(['\uFEFF'+csv], {type:'text/csv'});
+
+      const filename = filenameBase + '.csv';
+
+      if (window.showSaveFilePicker) {
+
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'CSV',
+            accept: {'text/csv': ['.csv']}
+          }]
+        });
+
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+      }
     }
 
   } catch(e) {
-    console.log("Export annulé");
+
   }
 
   // ====================
-  // 🔥 RESET COMPLET
+  // 🔥 RESET COMPLET (INCHANGÉ)
   // ====================
 
-  // stop scanner
   stopScanner();
 
-  // reset état
   currentEvent = null;
 
-  // reset statut
   const status = document.getElementById('eventStatus');
   if (status) status.textContent = '⚪ Pas de soirée';
 
-  // reset liste live (IMPORTANT)
   const live = document.getElementById('liveList');
   if (live) live.innerHTML = '';
 
-  // reset autres éléments
   const table = document.getElementById('eventTable');
   if (table) table.innerHTML = '';
 
   const result = document.getElementById('scanResult');
   if (result) result.innerHTML = '';
 
-  // forcer refresh UI
   renderLiveList();
   updateEventUI();
   updateStatusBar();
@@ -1054,7 +1107,7 @@ function checkQRAccess(){
 
   if(!id) return;
 
-  const member = members.find(m => m.id === id);
+  const member = members.find(m => parseInt(m.numero) === parseInt(id));
   if(!member) return;
 
   showMemberCard(id);
@@ -1090,9 +1143,15 @@ function getStatusClass(date){
   return "status-expired";
 }
 
-function showMemberCard(id){
-  const m = members.find(x => x.id === id);
+function showMemberCard(id){ 
+  const m = members.find(x => parseInt(x.numero) === parseInt(id));
   if (!m) return;
+
+  // 🔥 clone avec numéro formaté pour affichage UNIQUEMENT
+  const displayMember = {
+    ...m,
+    numero: formatMemberNumber(m.numero)
+  };
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay open';
@@ -1109,7 +1168,7 @@ function showMemberCard(id){
       gap:20px;
     ">
 
-      ${renderMemberCardHTML(m)}
+      ${renderMemberCardHTML(displayMember)}
 
       <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
         Fermer
@@ -1120,9 +1179,8 @@ function showMemberCard(id){
 
   document.body.appendChild(modal);
 
-  // 🔥 IMPORTANT : attendre que le DOM soit VRAIMENT prêt
   requestAnimationFrame(() => {
-    const el = modal.querySelector('#qr-' + m.id);
+    const el = modal.querySelector(`#qr-${CSS.escape(m.id)}`);
     drawQRToElement(m.id, el, 120);
   });
 }
@@ -1225,8 +1283,7 @@ function manualCheckin() {
   let member = null;
 
   // ===== 1. recherche par numéro
-  const numero = value.padStart(4, '0');
-  member = members.find(m => m.numero === numero);
+  member = members.find(m => parseInt(m.numero) === parseInt(value));
 
   // ===== 2. recherche par nom/prénom
   if (!member) {
@@ -1305,7 +1362,7 @@ function renderMembers() {
 
     return `
       <tr>
-        <td>${m.numero}</td>
+        <td>${formatMemberNumber(m.numero)}</td>
         <td>${m.prenom}</td>
         <td>${m.nom}</td>
         <td>${getTypeLabel(m.type)}</td>
@@ -1316,7 +1373,7 @@ function renderMembers() {
         <td>${getStatusBadge(m.date)}</td>
         <td class="actions">
           <div class="actions-wrap">
-            <button class="btn btn-success btn-sm" title="Carte" onclick="showMemberCard('${m.id}')">🪪</button>
+            <button class="btn btn-success btn-sm" title="Carte" onclick="showMemberCard('${m.numero}')">🪪</button>
             <button class="btn btn-primary btn-sm" title="Modifier" onclick="openEditModal('${m.id}')">✏</button>
             <button class="btn btn-danger btn-sm" title="Supprimer" onclick="deleteMember('${m.id}')">🗑</button>
             <button class="btn btn-secondary btn-sm" title="Envoyer email" onclick="sendMemberCard('${m.id}')">📧</button>
@@ -1326,6 +1383,19 @@ function renderMembers() {
     `;
 
   }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:30px">Aucun membre</td></tr>';
+}
+
+function cleanMemberNumbers() {
+  members = members.map(m => {
+    const n = parseInt(m.numero, 10);
+
+    return {
+      ...m,
+      numero: isNaN(n) ? String(Date.now()) : String(n)
+    };
+  });
+
+  saveAll();
 }
 
 async function sendMemberCard(id){
@@ -1347,7 +1417,7 @@ async function sendMemberCard(id){
 
   await new Promise(r => requestAnimationFrame(r));
 
-  const qr = temp.querySelector('#qr-' + m.id);
+  const qr = temp.querySelector(`#qr-${CSS.escape(m.id)}`);
   drawQRToElement(m.id, qr, 120);
 
   const canvas = await html2canvas(card, {
@@ -1414,6 +1484,8 @@ function openEditModal(id) {
   document.getElementById('fDate').value = m.date;
   document.getElementById('fTel').value = m.tel || '';
   document.getElementById('fEmail').value = m.email || '';
+  document.getElementById('fCotisation').value = m.cotisation || '';
+  document.getElementById('fType').value = m.type || 'simple';
   document.getElementById('fNotes').value = m.notes || '';
   document.getElementById('memberModal').classList.add('open');
 }
@@ -1509,6 +1581,7 @@ function deleteMember(id) {
 function normalizeMembers(){
   members = members.map(m => ({
     ...m,
+    numero: String(m.numero || Date.now()),
     cotisation: m.cotisation || '',
     type: m.type || 'simple'
   }));
@@ -1538,7 +1611,7 @@ function renderCards() {
     grid.appendChild(div);
 
     requestAnimationFrame(() => {
-      const el = div.querySelector('#qr-' + m.id);
+      const el = div.querySelector(`#qr-${CSS.escape(m.id)}`);
       drawQRToElement(m.id, el, 70);
     });
   });
@@ -1551,7 +1624,13 @@ function renderMemberCardHTML(m, qrSize = 70) {
       <div class="card-header">
 
         <div class="card-type ${m.type || 'simple'}">
-          ${(m.type || 'simple').toUpperCase()}
+          ${
+            {
+              simple: 'ADHÉRENT',
+              benevole: 'BÉNÉVOLE',
+              bureau: 'BUREAU'
+            }[m.type] || 'ADHÉRENT'
+          }
         </div>
 
         <div style="display:flex; align-items:center; gap:10px;">
@@ -1562,7 +1641,7 @@ function renderMemberCardHTML(m, qrSize = 70) {
       </div>
 
       <div class="card-name">${m.prenom} ${m.nom}</div>
-      <div class="card-num">N° ${m.numero}</div>
+      <div class="card-num">N° ${formatMemberNumber(m.numero)}</div>
 
       <div class="card-divider"></div>
 
@@ -1622,8 +1701,7 @@ function startScanner() {
         const code = jsQR(img.data, img.width, img.height);
 
         if (code && code.data) {
-          console.log("QR DETECTED:", code.data);
-          handleScanResult(code.data);
+           handleScanResult(code.data);
         }
 
       }, 200);
@@ -1738,8 +1816,6 @@ function handleScanResult(data) {
   if (alreadyScanned) return;
   alreadyScanned = true;
 
-  console.log("SCAN:", data);
-
   const resultDiv = document.getElementById('scanResult');
 
   let member = null;
@@ -1748,13 +1824,13 @@ function handleScanResult(data) {
   // ===== FORMAT HYBRIDE (URL|ID)
   if (data.includes("|ID:")) {
     scannedId = data.split("|ID:")[1];
-    member = members.find(m => m.numero === scannedId);
+    member = members.find(m => parseInt(m.numero) === parseInt(scannedId));
   }
 
   // ===== FORMAT ID PUR
   else if (data.startsWith("ID:")) {
     scannedId = data.replace("ID:", "");
-    member = members.find(m => m.numero === scannedId);
+    member = members.find(m => parseInt(m.numero) === parseInt(scannedId));
   }
 
   // ===== URL SEULE
@@ -1762,7 +1838,7 @@ function handleScanResult(data) {
     try {
       const url = new URL(data);
       scannedId = url.searchParams.get("member");
-      member = members.find(m => m.numero === scannedId);
+      member = members.find(m => parseInt(m.numero) === parseInt(scannedId));
     } catch(e){}
   }
 
@@ -1837,84 +1913,99 @@ function handleScanResult(data) {
   }, 800);
 }
 
-// ==================== IMPORT CSV ====================
-function importCSV(input) {
+// ==================== IMPORT Excel ====================
+function importExcel(input) {
 
-  const file = input.files[0];
+  const file = input.files?.[0];
   if (!file) return;
 
   const reader = new FileReader();
 
-  reader.onload = e => {
+  reader.onload = function(e) {
 
-    const lines = e.target.result.split('\n').filter(l => l.trim());
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
 
-    let added = 0, skipped = 0;
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
 
-    lines.forEach((line, i) => {
+    function parseExcelDate(value) {
+      if (!value) return '';
 
-      const cols = line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g,''));
-
-      if (cols.length < 2) { skipped++; return; }
-
-      const [prenom, nom, numero, typeRaw, date, cotisationRaw, tel, email, notes] = cols;
-
-      // skip header
-      if (i === 0 && (prenom.toLowerCase().includes('prenom') || prenom.toLowerCase().includes('prénom'))) return;
-
-      if (!prenom || !nom) { skipped++; return; }
-
-      const exists = members.find(m => m.numero === numero && numero);
-      if (exists) { skipped++; return; }
-
-      // 🔥 TYPE MAPPING PROPRE
-      let type = 'simple';
-
-      if (typeRaw) {
-        const t = typeRaw.toLowerCase();
-
-        if (t.includes('bénévole') || t.includes('benevole')) type = 'benevole';
-        else if (t.includes('bureau')) type = 'bureau';
+      if (typeof value === 'number') {
+        const date = new Date((value - 25569) * 86400 * 1000);
+        return isNaN(date) ? '' : date.toISOString().split('T')[0];
       }
 
-      // 🔥 COTISATION SAFE
-      let cotisation = '';
-      if (cotisationRaw !== undefined && cotisationRaw !== '') {
-        const n = Number(cotisationRaw.replace(',', '.'));
-        cotisation = isNaN(n) ? cotisationRaw : n;
+      const d = new Date(value);
+      return isNaN(d) ? '' : d.toISOString().split('T')[0];
+    }
+    let importedCount = 0;
+    rows.forEach(row => {
+      
+      const numeroRaw = row["Numéro"] ?? row["Numero"] ?? '';
+      let numero = parseInt(numeroRaw, 10);
+
+      if (isNaN(numero)) {
+        const nums = members.map(m => parseInt(m.numero)).filter(n => !isNaN(n));
+        numero = nums.length ? Math.max(...nums) + 1 : 1;
       }
+
+      const exists = members.find(m => parseInt(m.numero) === numero);
+      if (exists) return;
+
+      let type = (row["Type"] || 'simple').toLowerCase().trim();
+
+      if (type.includes('bureau')) type = 'bureau';
+      else if (type.includes('benevole') || type.includes('bénévole')) type = 'benevole';
+      else type = 'simple';
 
       members.push({
-        id: 'id_' + Date.now() + '_' + i,
-        prenom,
-        nom,
-        numero: numero || nextNumero(),
-        type,
-        date: parseDate(date),
-        cotisation,
-        tel: tel || '',
-        email: email || '',
-        notes: notes || ''
+        id: Date.now().toString() + Math.floor(Math.random()*1000),
+        prenom: row["Prénom"] || row["Prenom"] || '',
+        nom: row["Nom"] || '',
+        numero: String(numero),
+        type: type,
+        date: parseExcelDate(row["Date adhésion"] || row["Date adhesion"]),
+        cotisation: row["Cotisation"] || '',
+        tel: row["Téléphone"] || row["Telephone"] || '',
+        email: row["Email"] || '',
+        notes: row["Notes"] || ''
       });
-
-      added++;
+      importedCount++;
+      
     });
 
     saveAll();
-    renderDashboard();
     renderMembers();
-    renderCards();
 
-    document.getElementById('importResult').innerHTML = `
-      <div class="scan-result scan-ok">
-        ✅ ${added} membre(s) importé(s)<br>
-        <small>${skipped} ignoré(s)</small>
-      </div>`;
+    if (importedCount === 0) {
+      showImportFeedback("0 (doublons ignorés)");
+    } else {
+      showImportFeedback(importedCount);
+    }
 
-    document.getElementById('csvFile').value = '';
   };
 
-  reader.readAsText(file, 'UTF-8');
+  reader.readAsArrayBuffer(file);
+}
+
+function showImportFeedback(count) {
+
+  const el = document.getElementById('importFeedback');
+  if (!el) return;
+
+  el.style.display = "block";
+
+  el.innerHTML = `
+    <div class="scan-result scan-ok">
+      ✅ ${count} membre${count > 1 ? 's' : ''} importé${count > 1 ? 's' : ''}
+    </div>
+  `;
+
+  setTimeout(() => {
+    el.style.display = "none";
+  }, 2500);
 }
 
 function handleFile(file){
@@ -1974,25 +2065,33 @@ function parseDate(str) {
 }
 
 // ==================== EXPORT ====================
-function exportCSV() {
-  const rows = [['Prénom','Nom','Numéro','Type','Date adhésion','Cotisation','Téléphone','Email','Notes']];
-  members.forEach(m => rows.push([
-    m.prenom,
-    m.nom,
-    m.numero,
-    m.type,
-    m.date,
-    m.cotisation,
-    m.tel,
-    m.email,
-    m.notes
-  ]));
-  const csv = rows.map(r => r.join(';')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `membres_taniere_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
+function exportMembersExcel() {
+
+  if (!members.length) {
+    alert("Aucun membre à exporter");
+    return;
+  }
+
+  const data = members.map(m => ({
+    "Prénom": m.prenom,
+    "Nom": m.nom,
+    "Numéro": formatMemberNumber(m.numero),
+    "Type": m.type,
+    "Date adhésion": m.date || '',
+    "Cotisation": m.cotisation || '',
+    "Téléphone": m.tel || '',
+    "Email": m.email || '',
+    "Notes": m.notes || '',
+    "Statut": getStatusLabel(m.date)
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Membres");
+
+  const filename = "Base_Donnees-Membres_" + formatDateCompact(new Date()).split(' ')[0] + ".xlsx";
+
+  XLSX.writeFile(wb, filename);
 }
 
 function clearAllData() {
@@ -2011,7 +2110,7 @@ document.getElementById('memberModal').addEventListener('click', function(e) {
 
 window.addEventListener('DOMContentLoaded', () => { 
 
-  // ===== IMPORT CSV =====
+  // ===== IMPORT Excel =====
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('csvFile');
 
@@ -2030,11 +2129,11 @@ window.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', e => {
       e.preventDefault();
       dropZone.classList.remove('dragover');
-      importCSV({ files: e.dataTransfer.files });
+      importExcel({ files: e.dataTransfer.files });
     });
 
     fileInput.addEventListener('change', () => {
-      importCSV(fileInput);
+      importExcel(fileInput);
     });
   }
 
@@ -2099,6 +2198,7 @@ window.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
   checkQRAccess();
   normalizeMembers();
+  cleanMemberNumbers();
 
 });
 
