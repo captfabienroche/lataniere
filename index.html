@@ -445,6 +445,10 @@ tr:hover td { background:#fffaf5; }
   flex-shrink: 0;
 }
 
+#autocompleteList div:hover {
+  background: #f0f8ff;
+}
+
 </style>
 </head>
 <body>
@@ -578,7 +582,8 @@ tr:hover td { background:#fffaf5; }
 
       <div class="scan-box">
         <h2 style="margin-bottom:15px">Scanner un membre</h2>
-            <!-- BOUTONS SOIRÉE -->
+
+        <!-- BOUTONS SOIRÉE -->
         <div style="margin-bottom:15px; display:flex; gap:10px; justify-content:center;">
           <button id="eventToggleBtn" class="btn btn-success" onclick="toggleEvent()">🟢 Démarrer soirée</button>
         </div>
@@ -588,7 +593,39 @@ tr:hover td { background:#fffaf5; }
         <!-- CAMERA -->
         <video id="video" autoplay style="display:none;"></video>       
         <canvas id="canvas" hidden></canvas>
+
         <div id="scanResult" class="scan-result" style="display:none"></div>
+
+        <!-- 🔥 AJOUT MANUEL + AUTOCOMPLETE -->
+        <div style="margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:5px; position:relative;">
+          
+          <div style="display:flex; gap:8px;">
+            <input 
+              id="manualId" 
+              placeholder="Numéro ou nom (ex: 42 ou Dupont)"
+              style="padding:6px; width:200px; text-align:center;"
+              autocomplete="off"
+            />
+            <button class="btn btn-secondary" onclick="manualCheckin()">Ajouter</button>
+          </div>
+
+          <!-- AUTOCOMPLETE -->
+          <div id="autocompleteList" style="
+            position:absolute;
+            top:40px;
+            width:200px;
+            background:#fff;
+            border-radius:8px;
+            box-shadow:0 4px 12px rgba(0,0,0,0.15);
+            max-height:150px;
+            overflow-y:auto;
+            display:none;
+            z-index:1000;
+          "></div>
+
+        </div>
+
+        <!-- LISTE LIVE -->
         <div id="liveList" style="
           margin-top:15px;
           max-height:200px;
@@ -598,9 +635,12 @@ tr:hover td { background:#fffaf5; }
           padding:10px;
           font-size:13px;
         "></div>
+
+        <!-- BOUTON SCAN -->
         <button id="scanToggleBtn" class="btn btn-primary" onclick="toggleScanner()">
           ▶️ Démarrer le scan
         </button>
+
       </div>
     </div>
   </div>
@@ -698,6 +738,9 @@ const USERS = [
   { user: 'bureau', pass: 'taniere2026' }
 ];
 
+let autoIndex = -1;
+let autoResults = [];
+
 // ==================== LOGIN ====================
 function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
@@ -746,6 +789,14 @@ function drawQRToElement(id, el, size = 80){
     width: size,
     height: size,
     correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function highlight() {
+  const items = document.querySelectorAll('#autocompleteList div');
+
+  items.forEach((el, i) => {
+    el.style.background = i === autoIndex ? '#e6f2ff' : '#fff';
   });
 }
 
@@ -928,6 +979,75 @@ function renderLiveList(){
   }).join('');
 }
 
+function updateAutocomplete(value) {
+
+  const list = document.getElementById('autocompleteList');
+  if (!value) {
+    list.style.display = 'none';
+    return;
+  }
+
+  const v = value.toLowerCase();
+
+  autoResults = members
+    .filter(m =>
+      (m.prenom + ' ' + m.nom + ' ' + m.numero)
+        .toLowerCase()
+        .includes(v)
+    )
+    .slice(0, 5);
+
+  if (!autoResults.length) {
+    list.style.display = 'none';
+    return;
+  }
+
+  list.innerHTML = autoResults.map((m, i) => `
+    <div 
+      data-index="${i}"
+      onmouseenter="autoIndex=${i}; highlight()"
+      style="
+        padding:6px;
+        cursor:pointer;
+        border-bottom:1px solid #eee;
+      "
+    >
+      ${m.numero} — ${m.prenom} ${m.nom}
+    </div>
+  `).join('');
+
+  list.style.display = 'block';
+  autoIndex = -1;
+}
+
+function setupAutocompleteClick() {
+  const list = document.getElementById('autocompleteList');
+  if (!list) return;
+
+  list.addEventListener('mousedown', e => {
+    const item = e.target.closest('[data-index]');
+    if (!item) return;
+
+    const index = parseInt(item.dataset.index);
+    selectAutocomplete(index);
+  });
+}
+
+function selectAutocomplete(index) {
+  const m = autoResults[index];
+  if (!m) return;
+
+  handleScanResult(`ID:${m.numero}`);
+
+  const input = document.getElementById('manualId');
+  const list = document.getElementById('autocompleteList');
+
+  input.value = '';
+  input.focus(); // 🔥 IMPORTANT
+
+  list.style.display = 'none';
+}
+
 function checkQRAccess(){
   const params = new URLSearchParams(window.location.search);
   const id = params.get("member");
@@ -1086,9 +1206,55 @@ function getCardClass(dateStr) {
 }
 
 function nextNumero() {
-  if (members.length === 0) return '0001';
-  const nums = members.map(m => parseInt(m.numero) || 0);
-  return String(Math.max(...nums) + 1).padStart(4, '0');
+  const nums = members
+    .map(m => parseInt(m.numero))
+    .filter(n => !isNaN(n));
+
+  const max = nums.length ? Math.max(...nums) : 0;
+
+  return formatNumero(max + 1);
+}
+
+function manualCheckin() {
+
+  const input = document.getElementById('manualId');
+  let value = input.value.trim().toLowerCase();
+
+  if (!value) return;
+
+  let member = null;
+
+  // ===== 1. recherche par numéro
+  const numero = value.padStart(4, '0');
+  member = members.find(m => m.numero === numero);
+
+  // ===== 2. recherche par nom/prénom
+  if (!member) {
+    const results = members.filter(m =>
+      (m.prenom + ' ' + m.nom).toLowerCase().includes(value)
+    );
+
+    if (results.length === 1) {
+      member = results[0];
+    }
+
+    else if (results.length > 1) {
+      alert("Plusieurs résultats, précise le nom");
+      return;
+    }
+  }
+
+  // ===== 3. aucun trouvé
+  if (!member) {
+    alert("Membre introuvable");
+    return;
+  }
+
+  // ===== 4. check-in normal
+  handleScanResult(`ID:${member.numero}`);
+
+  input.value = '';
+  input.focus();
 }
 
 // ==================== DASHBOARD ====================
@@ -1119,6 +1285,10 @@ function renderDashboard() {
       <td>${getStatusBadge(m.date)}</td>
     </tr>
   `).join('');
+}
+
+function formatNumero(n) {
+  return String(n).padStart(4, '0');
 }
 
 // ==================== MEMBRES ====================
@@ -1615,7 +1785,6 @@ function handleScanResult(data) {
   const status = getMemberStatus(member.date);
 
   // ===== DÉJÀ SCANNÉ (PRIORITAIRE)
-  const now = Date.now();
   const already = currentEvent && currentEvent.attendees.some(a => 
     a.id === member.id
   );
@@ -1632,23 +1801,25 @@ function handleScanResult(data) {
       </div>`;
 
     setTimeout(() => { alreadyScanned = false; }, 1200);
-    return; // 🔥 STOP TOTAL
+    return;
   }
 
-  // ===== ENREGISTREMENT (uniquement si pas duplicate)
+  // ===== ENREGISTREMENT
   logScan(member);
 
-  // ===== SON
-  if (status === 'active' || status === 'next') {
-    playScanFeedback('ok');
-  } else {
-    playScanFeedback('expired');
+  // ===== SON (centralisé)
+  let soundType = 'ok';
+
+  if (!(status === 'active' || status === 'next')) {
+    soundType = 'expired';
   }
+
+  playScanFeedback(soundType);
 
   // ===== AFFICHAGE
   resultDiv.style.display = "block";
 
-  if (status === 'active' || status === 'next') {
+  if (soundType === 'ok') {
     resultDiv.innerHTML = `
       <div class="scan-result scan-ok">
         ✅ ${member.prenom} ${member.nom}
@@ -1660,7 +1831,7 @@ function handleScanResult(data) {
       </div>`;
   }
 
-  // ===== RESET SCAN CONTINU
+  // ===== RESET
   setTimeout(() => {
     alreadyScanned = false;
   }, 800);
@@ -1838,8 +2009,9 @@ document.getElementById('memberModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => { 
 
+  // ===== IMPORT CSV =====
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('csvFile');
 
@@ -1866,13 +2038,69 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 🔥 toujours exécuté
+  // ===== 🔥 AUTOCOMPLETE =====
+  const input = document.getElementById('manualId');
+
+  if (input) {
+
+    // input typing → suggestions
+    input.addEventListener('input', e => {
+      updateAutocomplete(e.target.value);
+    });
+
+    // clavier
+    input.addEventListener('keydown', e => {
+
+      if (!autoResults.length) return;
+
+      if (e.key === 'ArrowDown') {
+        autoIndex = Math.min(autoIndex + 1, autoResults.length - 1);
+        highlight();
+        e.preventDefault();
+      }
+
+      if (e.key === 'ArrowUp') {
+        autoIndex = Math.max(autoIndex - 1, 0);
+        highlight();
+        e.preventDefault();
+      }
+
+      if (e.key === 'Enter') {
+
+        if (autoIndex >= 0) {
+          selectAutocomplete(autoIndex);
+        } else {
+          manualCheckin();
+        }
+
+        e.preventDefault();
+      }
+    });
+  }
+
+  // ===== 🔥 CLICK SUR SUGGESTIONS =====
+  setupAutocompleteClick();
+
+  // ===== 🔥 CLICK OUTSIDE (FERMETURE) =====
+  document.addEventListener('click', e => {
+
+    const input = document.getElementById('manualId');
+    const list = document.getElementById('autocompleteList');
+
+    if (!input || !list) return;
+
+    if (!input.contains(e.target) && !list.contains(e.target)) {
+      list.style.display = 'none';
+    }
+
+  });
+
+  // ===== INIT =====
   lucide.createIcons();
   checkQRAccess();
   normalizeMembers();
 
 });
-
 
 </script>
 
