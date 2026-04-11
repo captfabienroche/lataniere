@@ -1,27 +1,40 @@
 @echo off
 cd /d %~dp0
 
-set VERSION=v1.17
+REM ===== CHECK ARG =====
+if "%1"=="" (
+  echo ❌ Usage: release 1.18
+  pause
+  exit /b
+)
+
+set VERSION=v%1
 
 echo ===============================
 echo   Release %VERSION%
 echo ===============================
 
-REM 🔥 Sécurité : ne jamais inclure .env
-git restore --staged .env 2>nul
-git rm --cached -f .env 2>nul
+echo.
+echo 🔹 Ajout fichiers
+git add .
 
-REM 🔥 Ajoute tout sauf .env
-git add . ":!.env"
+echo.
+echo 🔹 Commit (si changements)
+git diff --cached --quiet || git commit -m "%VERSION% - release"
 
-git commit -m "%VERSION% - release"
+echo.
+echo 🔹 Push
 git push
 
-git tag %VERSION%
+echo.
+echo 🔹 Tag
+git tag %VERSION% 2>nul
 git push origin %VERSION%
 
+echo.
+echo 🔹 Version file
 echo %VERSION% > version.txt
 
 echo.
-echo Release terminee : %VERSION%
+echo ✅ Release terminee : %VERSION%
 pause
