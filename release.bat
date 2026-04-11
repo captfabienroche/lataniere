@@ -7,11 +7,14 @@ echo ===============================
 echo   Release %VERSION%
 echo ===============================
 
-git rm --cached .env 2>nul
+REM 🔥 Sécurité : ne jamais inclure .env
+git restore --staged .env 2>nul
+git rm --cached -f .env 2>nul
 
-git add .
+REM 🔥 Ajoute tout sauf .env
+git add . ":!.env"
+
 git commit -m "%VERSION% - release"
-
 git push
 
 git tag %VERSION%
