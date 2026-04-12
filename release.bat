@@ -1,7 +1,6 @@
 @echo off
 cd /d %~dp0
 
-REM ===== CHECK ARG =====
 if "%1"=="" (
   echo ❌ Usage: release 1.18
   pause
@@ -18,8 +17,11 @@ echo.
 echo 🔹 Ajout fichiers
 git add .
 
+REM 🔥 PROTECTION .ENV (CRITIQUE)
+git restore --staged .env 2>nul
+
 echo.
-echo 🔹 Commit (si changements)
+echo 🔹 Commit
 git diff --cached --quiet || git commit -m "%VERSION% - release"
 
 echo.
