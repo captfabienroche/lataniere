@@ -1,6 +1,7 @@
 @echo off
 cd /d %~dp0
 
+REM ===== CHECK VERSION =====
 if "%1"=="" (
   echo ❌ Usage: release 1.18
   pause
@@ -17,11 +18,11 @@ echo.
 echo 🔹 Ajout fichiers
 git add .
 
-REM 🔥 PROTECTION .ENV (CRITIQUE)
+REM 🔥 PROTECTION ABSOLUE .ENV
 git restore --staged .env 2>nul
 
 echo.
-echo 🔹 Commit
+echo 🔹 Commit (si changements)
 git diff --cached --quiet || git commit -m "%VERSION% - release"
 
 echo.
