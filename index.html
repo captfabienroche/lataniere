@@ -128,29 +128,117 @@ nav h1 { color:#e07b00; font-size:18px; flex:1; margin-left:12px; }
 } 
 */
 
-/* TABLE */
-.table-wrap {
-  background:#fff;
-  border-radius:10px;
-  overflow-x:auto;   /* 🔥 clé */
-  overflow-y:hidden;
-}
-.table-header { padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #eee; }
-.table-header h3 { flex:1; color:#333; }
-input[type=text], input[type=email], input[type=tel], input[type=date], select, textarea {
-  padding:8px 12px; border:2px solid #ddd; border-radius:6px; font-size:14px;
-}
-input[type=text]:focus, input[type=email]:focus, input[type=tel]:focus,
-input[type=date]:focus, select:focus, textarea:focus {
-  outline:none; border-color:#e07b00;
-}
-.search-box { padding:8px 12px; border:2px solid #ddd; border-radius:6px; width:260px; font-size:14px; }
-.search-box:focus { outline:none; border-color:#e07b00; }
+/* ==================== TABLE ==================== */
 
-table { width:100%; border-collapse:collapse; }
-th { background:#f5f5f5; padding:12px 16px; text-align:left; font-size:13px; color:#666; border-bottom:2px solid #eee; }
-td { padding:12px 16px; font-size:14px; border-bottom:1px solid #f0f0f0; }
-tr:hover td { background:#fffaf5; }
+.table-wrap {
+  background: #fff;
+  border-radius: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* HEADER */
+.table-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.table-header h3 {
+  flex: 1;
+  color: #333;
+}
+
+/* INPUTS */
+input[type=text],
+input[type=email],
+input[type=tel],
+input[type=date],
+select,
+textarea {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #e07b00;
+}
+
+/* SEARCH */
+.search-box {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  width: 260px;
+  font-size: 14px;
+}
+
+.search-box:focus {
+  outline: none;
+  border-color: #e07b00;
+}
+
+/* TABLE */
+table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+/* HEADER CELLS */
+th {
+  background: #f5f5f5;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  color: #666;
+  border-bottom: 2px solid #eee;
+}
+
+/* CELLS */
+td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+  position: relative;
+}
+
+/* 🔥 LIMITATION NOM / PRENOM */
+td:nth-child(2),
+td:nth-child(3) {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 🔥 colonne actions toujours visible */
+td:last-child {
+  white-space: nowrap;
+  min-width: 160px;
+}
+
+/* 🔥 HOVER NOM COMPLET (PROPRE) */
+td:nth-child(2):hover,
+td:nth-child(3):hover {
+  overflow: visible;
+  white-space: normal;
+  background: #fff;
+  z-index: 10;
+}
+
+/* HOVER LIGNE */
+tr:hover td {
+  background: #fffaf5;
+}
 
 .expired-row td {
   background-color: #ffe5e5 !important;
@@ -255,6 +343,27 @@ tr:hover td { background:#fffaf5; }
 .form-group input, .form-group select, .form-group textarea { width:100%; }
 .form-group textarea { height:70px; resize:vertical; }
 .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+#scrollTopBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  background: #e07b00;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  font-size: 18px;
+  cursor: pointer;
+  display: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+#scrollTopBtn:hover {
+  background: #c96d00;
+}
 
 /* CARTE MEMBRE */
 .member-card {
@@ -505,8 +614,8 @@ tr:hover td { background:#fffaf5; }
     <button class="nav-btn active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
     <button class="nav-btn" onclick="showPage('members',this)">👥 Membres</button>
     <button class="nav-btn" onclick="showPage('cards',this)">💳 Cartes</button>
-    <button class="nav-btn" onclick="showPage('scanner',this)">📷 Scanner</button>
-    <button class="nav-btn" onclick="showPage('import',this)">📥 Import</button>
+    <button class="nav-btn" onclick="showPage('scanner',this)">📷 Soirée</button>
+    <button class="nav-btn" onclick="showPage('import',this)">📊 Données</button>
     <button class="nav-logout" onclick="doLogout()">Déconnexion</button>
   </nav>
 
@@ -548,6 +657,7 @@ tr:hover td { background:#fffaf5; }
     <div class="table-wrap">
       <div class="table-header">
         <h3>👥 Membres</h3>
+        <div id="membersStats" style="font-size:13px; color:#666;"></div>
         <input class="search-box" type="text" id="searchInput" placeholder="Rechercher..." oninput="renderMembers()">
         <button class="btn btn-primary" onclick="openAddModal()">+ Ajouter</button>
       </div>
@@ -651,7 +761,7 @@ tr:hover td { background:#fffaf5; }
     <div style="max-width:600px; margin:0 auto;">
 
       <div class="table-wrap" style="padding:24px;">
-        <h3 style="margin-bottom:8px; color:#e07b00;">📥 Import CSV</h3>
+        <h3 style="margin-bottom:8px; color:#e07b00;">📥 Import Excel</h3>
         <p style="color:#666; font-size:13px; margin-bottom:20px;">
           Format attendu :
           <strong>prénom, nom, numéro, type, date, cotisation, téléphone, email, notes</strong>
@@ -660,9 +770,9 @@ tr:hover td { background:#fffaf5; }
         <div id="dropZone" class="drop-zone">
           <div style="font-size:40px;">📂</div>
           <div style="margin-top:10px; font-size:15px;">
-            Glissez votre fichier Excel ici
+            Importer la base membres (Excel)
           </div>
-          <small style="color:#888;">ou cliquez pour sélectionner</small>
+          <small style="color:#888;">Glisser ou cliquer</small>
 
           <input type="file" id="csvFile" accept=".xlsx, .xls" style="display:none;">
         </div>
@@ -920,7 +1030,28 @@ async function endEvent(){
 
       const filename = filenameBase + '.xlsx';
 
-      XLSX.writeFile(wb, filename);
+      if (window.showSaveFilePicker) {
+
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'Excel',
+            accept: {
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+            }
+          }]
+        });
+
+        const writable = await handle.createWritable();
+
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+        await writable.write(wbout);
+        await writable.close();
+
+      } else {
+        XLSX.writeFile(wb, filename);
+      }
 
     } else {
 
@@ -1363,8 +1494,8 @@ function renderMembers() {
     return `
       <tr>
         <td>${formatMemberNumber(m.numero)}</td>
-        <td>${m.prenom}</td>
-        <td>${m.nom}</td>
+        <td title="${m.prenom}">${m.prenom}</td>
+        <td title="${m.nom}">${m.nom}</td>
         <td>${getTypeLabel(m.type)}</td>
         <td title="${m.email || ''}">${m.email || '-'}</td>
         <td title="${m.tel || ''}">${m.tel || '-'}</td>
@@ -1383,6 +1514,23 @@ function renderMembers() {
     `;
 
   }).join('') || '<tr><td colspan="10" style="text-align:center;color:#999;padding:30px">Aucun membre</td></tr>';
+
+  const totalMembers = members.length;
+  const totalCotisations = members.reduce((sum, m) => {
+    return sum + (parseFloat(m.cotisation) || 0);
+  }, 0);
+
+  const avg = totalMembers ? (totalCotisations / totalMembers) : 0;
+  const stats = document.getElementById('membersStats');
+
+  if (stats) {
+    stats.innerHTML = `
+      👥 ${totalMembers} membres &nbsp;|&nbsp;
+      💰 ${totalCotisations.toFixed(2)} € &nbsp;|&nbsp;
+      🎯 ${avg.toFixed(2)} €
+    `;
+  }
+
 }
 
 function cleanMemberNumbers() {
@@ -1872,7 +2020,7 @@ function handleScanResult(data) {
     resultDiv.style.display = "block";
     resultDiv.innerHTML = `
       <div class="scan-result scan-expired">
-        ⚠️ Déjà scanné<br>
+        ⚠️ Déjà identifié<br>
         <small>${member.prenom} ${member.nom}</small>
       </div>`;
 
@@ -1928,6 +2076,16 @@ function importExcel(input) {
 
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
+
+    // ===== DÉTROMPEUR MEMBRES =====
+    const required = ["Prénom","Nom","Numéro","Type"];
+
+    const isValid = rows.length && required.every(col => col in rows[0]);
+
+    if (!isValid) {
+      showImportFeedback("❌ Mauvais fichier (attendu : base membres)", "error");
+      return;
+    }
 
     function parseExcelDate(value) {
       if (!value) return '';
@@ -2065,7 +2223,7 @@ function parseDate(str) {
 }
 
 // ==================== EXPORT ====================
-function exportMembersExcel() {
+async function exportMembersExcel() {
 
   if (!members.length) {
     alert("Aucun membre à exporter");
@@ -2091,7 +2249,28 @@ function exportMembersExcel() {
 
   const filename = "Base_Donnees-Membres_" + formatDateCompact(new Date()).split(' ')[0] + ".xlsx";
 
-  XLSX.writeFile(wb, filename);
+  if (window.showSaveFilePicker) {
+
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{
+        description: 'Excel',
+        accept: {
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+        }
+      }]
+    });
+
+    const writable = await handle.createWritable();
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+    await writable.write(wbout);
+    await writable.close();
+
+  } else {
+    XLSX.writeFile(wb, filename);
+  }
 }
 
 function clearAllData() {
@@ -2114,7 +2293,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('csvFile');
 
+  // 🔥 IMPORT MEMBRES (DROPZONE)
   if (dropZone && fileInput) {
+
     dropZone.addEventListener('click', () => fileInput.click());
 
     dropZone.addEventListener('dragover', e => {
@@ -2137,17 +2318,29 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const scrollBtn = document.getElementById("scrollTopBtn");
+
+  window.addEventListener("scroll", () => {
+    if (window.scrollY > 300) {
+      scrollBtn.style.display = "block";
+    } else {
+      scrollBtn.style.display = "none";
+    }
+  });
+
+  scrollBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
   // ===== 🔥 AUTOCOMPLETE =====
   const input = document.getElementById('manualId');
 
   if (input) {
 
-    // input typing → suggestions
     input.addEventListener('input', e => {
       updateAutocomplete(e.target.value);
     });
 
-    // clavier
     input.addEventListener('keydown', e => {
 
       if (!autoResults.length) return;
@@ -2180,7 +2373,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // ===== 🔥 CLICK SUR SUGGESTIONS =====
   setupAutocompleteClick();
 
-  // ===== 🔥 CLICK OUTSIDE (FERMETURE) =====
+  // ===== 🔥 CLICK OUTSIDE =====
   document.addEventListener('click', e => {
 
     const input = document.getElementById('manualId');
@@ -2203,6 +2396,8 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+<button id="scrollTopBtn" title="Retour en haut">⬆</button>
 
 </body>
 </html>
